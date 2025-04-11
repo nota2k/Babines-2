@@ -1,25 +1,34 @@
-import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import allPlaylistsData from '@/data/allPlaylist.json'; // Import du fichier JSON
 
-export const userSpotifyStore = defineStore('spotify', () => {
-  const spotify = ref([])
-  const loading = ref(false)
-  const error = ref(null)
+export const userSpotifyStore = defineStore('spotify', {
+  state: () => ({
+    playlists: [],
+    // likedTracks: [],
+    // tracksByPlaylist: [],
+    loading: false,
+    error: null
+  }),
 
-  const getAllPlaylists = async () => {
-    const response = await fetch('https://tentacules.pantagruweb.club/webhook/getplaylist')
-    spotify.value = await response.json()
-
-    try{
-      loading.value = false
-    } catch (err) {
-      error.value = err
-      loading.value = false
-    } finally {
-      loading.value = false
+  actions: {
+    async fetchAllPlaylists() {
+      try {
+        this.playlists = allPlaylistsData
+      } catch (error) {
+        console.error('Error fetching listes:', error)
+      }
     }
-  }
+    }
 
-  return { spotify, loading, error, getAllPlaylists }
+    // const getPlaylistById = (id) => {
+    //   const currentPlaylist = playlists.value.find(playlist => playlist.id === id)
+    //   if (playlist) {
+    //     currentPlaylist.value = playlist
+    //   } else {
+    //     console.error(`Playlist with id ${id} not found`)
+    //   }
+    // }
 
-})
+    // return { playlists, loading, error, fetchAllPlaylists, getPlaylistById }
+
+  })
