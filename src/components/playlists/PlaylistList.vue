@@ -3,11 +3,15 @@ import { ref, onMounted, defineEmits, defineProps } from 'vue'
 import { userSpotifyStore } from '@/stores/spotify.js'
 
 const allPlaylists = userSpotifyStore();
-const emit = defineEmits(['getPlaylistId', 'getPlaylistName'])
+const emit = defineEmits(['selectPlaylist']);
 
 defineProps({
   playlists: {
     type: Array,
+    required: true
+  },
+  loading: {
+    type: Boolean,
     required: true
   }
 });
@@ -25,11 +29,10 @@ defineProps({
             v-for="playlist in playlists"
             :key="playlist.id"
             class="playlist-item"
-            @click="playlistsStore.fetchTracksByPlaylist(playlist.id)"
+            @click="$emit('selectPaylist',playlist.id)"
           >
             {{ playlist.name }}
           </li>
-          />
         </ul>
       </div>
     </div>

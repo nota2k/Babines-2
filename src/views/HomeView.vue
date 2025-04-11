@@ -9,6 +9,16 @@ import PlaylistTracklist from '@/components/playlists/PlaylistTracklist.vue'
 import { userSpotifyStore } from '@/stores/spotify'
 
 const playlistsStore = userSpotifyStore()
+const selectedPlaylistId = ref(null); // Stocke l'ID de la playlist sélectionnée
+
+const handleSelectPlaylist = (id) => {
+  if(!id){
+    playlistsStore.fetchLikedTracks()
+    return
+  }
+  selectedPlaylistId.value = id; // Met à jour l'ID sélectionné
+};
+
 onMounted(() => {
   playlistsStore.fetchAllPlaylists();
 })
@@ -25,7 +35,7 @@ onMounted(() => {
 <template>
   <main>
     <Header />
-    <PlaylistList :playlists="playlistsStore.playlists" />
+    <PlaylistList :playlists="playlistsStore.playlists" :loading="playlistsStore.loading"/>
     <div class="youtube-to-spotify">
       <div class="container flex column">
         <div class="img-wrapper">
@@ -35,7 +45,7 @@ onMounted(() => {
       </div>
     </div>
     <Aside />
-    <!-- <PlaylistTracklist :id="playlistsStore.currentPlaylistId" /> -->
+    <!-- <PlaylistTracklist :id="selectedPlaylistId" /> -->
   </main>
 </template>
 
