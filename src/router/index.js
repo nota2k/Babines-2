@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import PlaylistList from '@/components/playlists/PlaylistList.vue'
 import PlaylistView from '@/views/PlaylistView.vue'
 
 const router = createRouter({

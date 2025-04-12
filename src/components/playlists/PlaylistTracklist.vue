@@ -13,7 +13,6 @@ let isSortedAsc = ref(true)
 let sortedBy = ref('')
 
 const props = defineProps({
-  playlist: String,
   id: {
     type: String,
   }
@@ -22,17 +21,10 @@ const props = defineProps({
 watch(
   () => route.params.id,
    (newId) => {
-    if(!newId) {
-      tracks.value = store.likedTracks
-      return tracks
-    }
     if (newId) {
       tracks.value = store.fetchTracksByPlaylist(newId).tracksByPlaylist
       tracks.value = playlist.tracksByPlaylist
       store.currentPlaylist = store.playlists.find(playlist => playlist.id === newId)
-      return tracks
-    } else {
-      tracks.value = store.likedTracks
       return tracks
     }
   },
@@ -50,6 +42,7 @@ const goToVideoView = () => {
 }
 
 const sortTracksByArtist = (event) => {
+  tracks.value = store.tracksByPlaylist
   tracks.value.sort((a, b) => {
     if (a.track.artist.toLowerCase() < b.track.artist.toLowerCase())
       return isSortedAsc.value ? -1 : 1
@@ -64,6 +57,7 @@ const sortTracksByArtist = (event) => {
 }
 
 const sortTracksByTitle = (event) => {
+  tracks.value = store.tracksByPlaylist
   tracks.value.sort((a, b) => {
     if (a.track.title.toLowerCase() < b.track.title.toLowerCase()) return isSortedAsc.value ? -1 : 1
     if (a.track.title.toLowerCase() > b.track.title.toLowerCase()) return isSortedAsc.value ? 1 : -1
@@ -76,6 +70,7 @@ const sortTracksByTitle = (event) => {
 }
 
 const sortTracksByAdded = (event) => {
+  tracks.value = store.tracksByPlaylist
   tracks.value.sort((a, b) => {
     if (a.track.added_at.toLowerCase() < b.track.added_at.toLowerCase())
       return isSortedAsc.value ? -1 : 1

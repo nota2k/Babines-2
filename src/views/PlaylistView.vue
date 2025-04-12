@@ -8,7 +8,6 @@ import PlaylistList from '@/components/playlists/PlaylistList.vue'
 import PlaylistTracklist from '@/components/playlists/PlaylistTracklist.vue'
 import { userSpotifyStore } from '@/stores/spotify'
 
-
 const store = userSpotifyStore();
 const selectedPlaylistId = ref(null); // Playlist sélectionnée
 
@@ -26,7 +25,6 @@ watch(
 
 const handleSelectPlaylist = async (id) => {
   selectedPlaylistId.value = id; // Met à jour l'ID sélectionné
-  // console.log('Selected playlist ID:', id);
 };
 
 onMounted(() => {
