@@ -6,6 +6,7 @@
     <form>
       <input placeholder="Titre" type="text" id="title" name="title" />
       <input type="text" placeholder="Artiste" id="artist" name="artist" />
+      <input type="text" placeholder="Lien" id="url" name="lien" />
       <button type="submit" class="yellow">
         <div class="add-icon"></div>
       </button>
