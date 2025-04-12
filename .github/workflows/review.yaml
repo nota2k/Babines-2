@@ -52,6 +52,7 @@ jobs:
         uses: dokku/github-action@master
         with:
           # create a review app
+          branch: ${{ github.head_ref }}
           git_remote_url: 'ssh://dokku@lehavre.constructions-incongrues.net:22/babines-review-app'
           # specify a name for the review app
           review_app_name: review-babines-${{ github.event.pull_request.number }}
