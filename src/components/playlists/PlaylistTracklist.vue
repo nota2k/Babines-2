@@ -1,12 +1,13 @@
 <script setup>
-import { ref, onMounted, defineProps } from 'vue'
+import { ref, onMounted, defineProps, onBeforeMount, onUpdated, watch } from 'vue'
 // import AddTrackManually from '../addTrackManually.vue'
-import allPlaylistsData from '@/data/allPlaylist.json'; // Import du fichier JSON
+import { userSpotifyStore } from '@/stores/spotify';
+import { useRoute } from 'vue-router'
 
-const playlistsStore = usePlaylistsStore()
-
+const route = useRoute()
+const store = userSpotifyStore();
 let tracks = ref([])
-let loading = ref(true)
+let playlist = ref([])
 let isSorted = ref(false)
 let isSortedAsc = ref(true)
 let sortedBy = ref('')
@@ -14,6 +15,34 @@ let sortedBy = ref('')
 const props = defineProps({
   id: String
 })
+
+watch(
+  () => route.params.id,
+   (newId) => {
+    if(!newId) {
+      tracks.value = store.likedTracks
+      return tracks
+    }
+    if (newId) {
+      tracks.value = store.fetchTracksByPlaylist(newId).tracksByPlaylist
+      tracks.value = playlist.tracksByPlaylist
+      return tracks
+    } else {
+      tracks.value = store.likedTracks
+      return tracks
+    }
+  },
+  { immediate: true }
+)
+
+// onUpdated(() => {
+//   if (props.id) {
+//     tracks.value = store.fetchPlaylistById(props.id).track
+//   } else {
+//     tracks.value = store.likedTracks
+//   }
+// })
+
 
 const goToVideoView = () => {
   router.push({
@@ -65,10 +94,6 @@ const sortTracksByAdded = (event) => {
   event.target.setAttribute('data-value', isSortedAsc.value)
 }
 
-// onMounted(() => {
-//   playlistsStore.fetchTracksByPlaylist(props.id)
-// })
-console.log(playlistsStore)
 </script>
 
 <template>
@@ -78,8 +103,8 @@ console.log(playlistsStore)
       <!-- <AddTrackManually /> -->
       <h2 class="playlist-name">
         {{
-          playlistsStore.currentPlaylist?.name
-            ? playlistsStore.currentPlaylist.name
+          store.currentPlaylist?.name
+            ? store.currentPlaylist.name
             : 'Tous mes morceaux'
         }}
       </h2>
@@ -116,8 +141,8 @@ console.log(playlistsStore)
 
         <tbody>
           <tr
-            v-for="track in playlistsStore.currentPlaylistId"
-            :key="playlistsStore.currentPlaylistId"
+            v-for="track in store.tracksByPlaylist"
+            :key="track.id"
           >
             <td class="title">
               {{ track.track.title }}
@@ -132,16 +157,16 @@ console.log(playlistsStore)
               {{ track.track.added_at }}
             </td>
             <td class="to-youtube" @click="goToVideoView">
-              <router-link
+              <!-- <router-link
                 :to="{
                   name: 'getvideo',
                   params: {
-                    title: encodeURIComponent(props.title),
-                    artist: encodeURIComponent(props.artist)
+                    title: encodeURIComponent(track.track.title),
+                    artist: encodeURIComponent(track.track.artist)
                   }
                 }"
                 class="yt"
-              >
+              > -->
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -159,7 +184,7 @@ console.log(playlistsStore)
                   />
                   <path d="m10 15 5-3-5-3z" />
                 </svg>
-              </router-link>
+              <!-- </router-link> -->
             </td>
           </tr>
         </tbody>

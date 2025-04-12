@@ -1,9 +1,10 @@
 <script setup>
 import { ref, onMounted, defineEmits, defineProps } from 'vue'
+import { storeToRefs } from 'pinia'
 import { userSpotifyStore } from '@/stores/spotify.js'
 
-const allPlaylists = userSpotifyStore();
-const emit = defineEmits(['selectPlaylist']);
+const store = userSpotifyStore()
+let { loading } = storeToRefs(store);
 
 defineProps({
   playlists: {
@@ -15,6 +16,9 @@ defineProps({
     required: true
   }
 });
+
+const emit = defineEmits(['selectPlaylist']);
+
 </script>
 
 <template>
@@ -25,14 +29,11 @@ defineProps({
         <button class="close" @click="$emit('close')">Fermer</button>
         <h2>Playlists Spawtify</h2>
         <ul>
-          <li
-            v-for="playlist in playlists"
-            :key="playlist.id"
-            class="playlist-item"
-            @click="$emit('selectPaylist',playlist.id)"
-          >
-            {{ playlist.name }}
-          </li>
+          <router-link :to="{ name: 'playlist', params: { id: playlist.id }}" v-for="playlist in playlists" :key="playlist.id">
+            <li class="playlist-item" @click="$emit('selectPlaylist', playlist.id)">
+              {{ playlist.name }}
+            </li>
+          </router-link>
         </ul>
       </div>
     </div>
