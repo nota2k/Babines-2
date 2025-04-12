@@ -108,21 +108,6 @@ li:nth-child(odd) {
   background: #f9f9f9;
 }
 
-a {
-  text-decoration: none;
-  color: black;
-  transition: 0.2s ease-in-out all;
-  margin-left: 0;
-}
-
-@media (hover: hover) {
-  a:hover {
-    background-color: var(--yellow);
-    font-weight: 500;
-    margin-left: 5px;
-  }
-}
-
 .playlist-wrapper {
   grid-column-start: 1;
 }

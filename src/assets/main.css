@@ -70,3 +70,20 @@ body {
 .youtube-to-spotify:hover .os{
   filter: invert(1);
 }
+
+.playlist-wrapper a{
+  text-decoration: none;
+  color: black;
+  transition: 0.2s ease-in-out all;
+  margin-left: 0;
+  display: block;
+  line-height: 1em;
+}
+
+@media (hover: hover) {
+  .playlist-wrapper a:hover {
+    background-color: var(--yellow);
+    font-weight: 500;
+    margin-left: 5px;
+  }
+}
