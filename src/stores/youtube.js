@@ -4,9 +4,9 @@ export const userYoutubeStore = defineStore('youtube', {
   state: () => ({
     playlists: [],
     currentPlaylist: [],
-    videos: [],
-    loading: false,
-    error: null
+    videosByPlaylist: [],
+    // loading: false,
+    // error: null
   }),
 
   actions: {
@@ -17,7 +17,7 @@ export const userYoutubeStore = defineStore('youtube', {
         );
         const data = await response.json();
         this.playlists = data;
-        // loading = true
+        // console.log('Playlists:', data)
         return this.playlists; // Retourne les playlists
       } catch (error) {
         console.error('Error fetching listes:', error)
@@ -27,7 +27,7 @@ export const userYoutubeStore = defineStore('youtube', {
     async fetchPlaylistById(playlistId) {
       try {
         const data = await fetch(
-          `https://tentacules.pantagruweb.club/webhook/youtube?id=${playlistId}`
+          `https://tentacules.pantagruweb.club/webhook/youtube?playlistId=${playlistId}`
         ).find(playlist => playlist.playlistId === playlistId);;
         this.playlists = data;
         return this.playlists; // Retourne les playlists
@@ -37,28 +37,17 @@ export const userYoutubeStore = defineStore('youtube', {
       }
     },
 
-    async fetchVideosByPlaylist(id) {
-      this.loading = true;
-      this.error = null;
-
+    async fetchVideosByPlaylist(playlistId) {
       try {
         const response = await fetch(
-          `https://tentacules.pantagruweb.club/webhook/youtube?id=${id}`
+          `https://tentacules.pantagruweb.club/webhook-test/youtube/items?playlistId=${playlistId}`
         );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const data = await response.json();
-        this.videos = data;
-        return data; // Retourne les données après traitement JSON
+        this.videosByPlaylist = data;
+        return videosByPlaylist; // Retourne les données après traitement JSON
       } catch (error) {
         console.error('Error fetching videos:', error);
-        this.error = error.message;
         return [];
-      } finally {
-        this.loading = false;
       }
     }
   }

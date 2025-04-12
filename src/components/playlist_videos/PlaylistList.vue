@@ -1,36 +1,32 @@
 <script setup>
-import { ref, onMounted, defineEmits, defineProps, watch } from 'vue'
+import { ref, onMounted, defineEmits, defineProps, watch, onBeforeMount } from 'vue'
 import { storeToRefs } from 'pinia'
 import { userYoutubeStore } from '@/stores/youtube';
 
 const store = userYoutubeStore()
 let playlists = ref([])
-let { loading } = storeToRefs(store);
 
 const props = defineProps({
-  page: String,
-  playlists: {
-    type: Object,
-    required: true
-  },
-  loading: {
-    type: Boolean,
-    required: true
-  }
+  page: String
 });
 
-onMounted(() => {
-  playlists.value = store.playlists
-});
+// onMounted(() => {
+//   playlists.value = store.fetchAllPlaylists()
+//   // console.log('playlists', playlists.value)
+// });
 
+async function fetchPlaylists() {
+  playlists.value = await store.fetchAllPlaylists()
+  console.log('playlists', playlists.value)
+}
+fetchPlaylists()
 const emit = defineEmits(['selectPlaylist']);
 
 </script>
 
 <template>
   <div class="playlist-wrapper">
-    <div v-if="loading">Chargement...</div>
-    <div v-else>
+    <div>
       <div class="container">
         <button class="close" @click="$emit('close')">Fermer</button>
         <h2>{{props.page}}</h2>

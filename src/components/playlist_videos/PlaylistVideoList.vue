@@ -5,8 +5,9 @@ import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const store = userYoutubeStore();
+let playlist = ref([])
 const videos = ref([]) // Définir videos pour qu'il soit accessible dans le template
-const loading = ref(false)
+// const loading = ref(false)
 
 const props = defineProps({
   id: {
@@ -14,26 +15,17 @@ const props = defineProps({
   }
 })
 
-// Fonction pour charger les vidéos
-async function loadVideos(playlistId) {
-  loading.value = true
-  try {
-    // Attendez que les données soient récupérées
-    videos.value = await store.fetchVideosByPlaylist(playlistId)
-    // Trouver la playlist courante
-    store.currentPlaylist = store.playlists.find(playlist => playlist.id === playlistId)
-  } catch (error) {
-    console.error('Erreur lors du chargement des vidéos:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
 watch(
   () => route.params.id,
   (newId) => {
+    if(!newId) {
+      return
+    }
     if (newId) {
-      loadVideos(newId)
+      videos.value = store.fetchVideosByPlaylist(newId)
+      videos.value = playlist.videos
+      store.currentPlaylist = store.playlists.find(playlist => playlist.id === newId)
+      return videos
     }
   },
   { immediate: true }
@@ -43,10 +35,8 @@ watch(
 <template>
   <div class="tracklist-wrapper">
     <div class="container">
-      <div v-if="loading">Chargement...</div>
-
       <h2 class="playlist-name">
-        {{ store.currentPlaylist?.name ? store.currentPlaylist.name : 'Toutes les vidéos' }}
+        {{ store.currentPlaylist?.title ? store.currentPlaylist.title : 'Toutes les vidéos' }}
       </h2>
 
       <div class="videos-container" v-if="!loading">

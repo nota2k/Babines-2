@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch} from 'vue'
+import { ref, onMounted, onBeforeMount, watch} from 'vue'
 import Header from '@/components/Header.vue'
 import Aside from '@/components/Aside.vue'
 
@@ -8,6 +8,7 @@ import PlaylistVideoList from '@/components/playlist_videos/PlaylistVideoList.vu
 import {userYoutubeStore} from '@/stores/youtube'
 
 const store = userYoutubeStore();
+const playlist = ref([])
 const selectedPlaylistId = ref(null); // Playlist sélectionnée
 
 const handleSelectPlaylist = async (id) => {
@@ -16,6 +17,7 @@ const handleSelectPlaylist = async (id) => {
 
 onMounted(() => {
   store.fetchAllPlaylists(); // Charge toutes les playlists au montage
+  playlist.value = store.playlists
 });
 
 </script>
@@ -23,7 +25,7 @@ onMounted(() => {
 <template>
   <main>
     <Header />
-    <PlaylistList page="Playlist Youtruffe" :playlists="store.playlists" :loading="store.loading"
+    <PlaylistList page="Playlist Youtruffe"
       @selectPlaylist="handleSelectPlaylist" />
     <div class="youtube-to-spotify">
       <div class="container flex column">
@@ -34,7 +36,7 @@ onMounted(() => {
       </div>
     </div>
     <Aside />
-    <PlaylistVideoList />
+    <PlaylistVideoList :id="selectedPlaylistId"/>
   </main>
 </template>
 
