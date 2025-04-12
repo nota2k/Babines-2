@@ -39,6 +39,7 @@
               fetch-depth: 0
     
           - name: Push to dokku
+            id: push-to-dokku
             uses: dokku/github-action@master
             with:
               # create a review app
@@ -46,7 +47,15 @@
               # specify a name for the review app
               review_app_name: review-babines-${{ github.event.pull_request.number }}
               ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
-    
+
+          - name: Comment PR
+            uses: thollander/actions-comment-pull-request@v3
+            with:
+              message: |
+                Review app : ${{
+                  steps.push-to-dokku.outputs.review_app_url
+                }}
+
       destroy_review_app:
         runs-on: ubuntu-latest
         # only run when a pull request is closed
