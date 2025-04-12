@@ -1,18 +1,26 @@
 <script setup lang="ts">
 import { defineEmits } from 'vue';
 import { userSpotifyStore } from '@/stores/spotify';
+import { userYoutubeStore } from '@/stores/youtube';
 
 const emit = defineEmits(['exportJson', 'clearCache']);
-const store = userSpotifyStore();
+const spotify = userSpotifyStore();
+const youtube = userYoutubeStore();
 
 function syncLikedTrack() {
   emit('clearCache');
 }
 
 function exportCurrentPlaylist() {
-  const playlist = store.tracksByPlaylist; // Récupère la playlist courante
+  const playlist = spotify.tracksByPlaylist; // Récupère la playlist courante
+  const youtubePlaylist = youtube.currentPlaylist; // Récupère la playlist Youtube
+  console.log('playlist', youtubePlaylist);
   if (!playlist || playlist.length === 0) {
     alert('Aucune playlist à exporter.');
+    return;
+  }
+  if (!youtubePlaylist || youtubePlaylist.length === 0) {
+    alert('Aucune playlist Youtube à exporter.');
     return;
   }
 

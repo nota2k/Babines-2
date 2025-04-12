@@ -25,18 +25,19 @@ onMounted(() => {
 <template>
   <main>
     <Header />
-    <PlaylistList page="Playlist Youtruffe"
-      @selectPlaylist="handleSelectPlaylist" />
+    <PlaylistList page="Playlist Youtruffe" @selectPlaylist="handleSelectPlaylist" />
     <div class="youtube-to-spotify">
-      <div class="container flex column">
-        <div class="img-wrapper">
-          <img class="os" src="../assets/os.svg" alt="os" />
+      <router-link :to="{ name: 'home' }">
+        <div class="container flex column">
+          <div class="img-wrapper">
+            <img class="os" src="../assets/os.svg" alt="os" />
+          </div>
+          <p>Spawtify</p>
         </div>
-        <p>Youtube</p>
-      </div>
+      </router-link>
     </div>
     <Aside />
-    <PlaylistVideoList :id="selectedPlaylistId"/>
+    <PlaylistVideoList :id="selectedPlaylistId" />
   </main>
 </template>
 

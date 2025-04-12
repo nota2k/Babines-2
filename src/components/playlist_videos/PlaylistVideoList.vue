@@ -38,7 +38,7 @@ watch(
 
       <div class="videos-container" v-if="!loading">
         <div class="video-item" v-for="video in store.playlists" :key="video.id"
-          :class="{ 'deleted-video': video.title === 'Deleted video' }">
+          :class="{ 'deleted-video': video.title === 'Deleted video' || video.title === 'Private video' }">
           <router-link :to="{ name: 'oneplaylist', params: { id: video.id } }">
             <img :src="video.thumbnail_url" />
             <h2>{{ video.title }}</h2>
@@ -60,7 +60,7 @@ watch(
 }
 
 .video-item {
-  width: 300px;
+  width: calc(100% / 4 - 20px);
   margin: 0 10px;
   height: fit-content;
   /* flex-grow: 2; */
