@@ -70,7 +70,7 @@ const emit = defineEmits(['selectPlaylist']);
   flex-direction: column;
   align-items: center;
   border: 2px solid black;
-  max-height: 80vh;
+  height: 55vh;
   position: relative;
 }
 
