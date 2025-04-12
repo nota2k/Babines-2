@@ -29,6 +29,7 @@ watch(
     if (newId) {
       tracks.value = store.fetchTracksByPlaylist(newId).tracksByPlaylist
       tracks.value = playlist.tracksByPlaylist
+      store.currentPlaylist = store.playlists.find(playlist => playlist.id === newId)
       return tracks
     } else {
       tracks.value = store.likedTracks
@@ -200,6 +201,7 @@ const sortTracksByAdded = (event) => {
 
 .tracklist-wrapper {
   grid-row: 2 / 7;
+  height: fit-content;
 }
 
 table {
