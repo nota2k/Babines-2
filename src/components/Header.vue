@@ -1,11 +1,26 @@
 <script setup>
-import { ref, onMounted, defineEmits, defineProps } from 'vue'
+import { ref, onMounted, defineEmits, defineProps, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { userSpotifyStore } from '@/stores/spotify.js'
+
+const store = userSpotifyStore()
+const route = useRoute()
+watch(
+  () => route.params.id,
+  (newId) => {
+    if (!newId) {
+      store.likedTracks
+    }
+  },
+  { immediate: true }
+)
+
+const emit = defineEmits(['clearCache'])
 </script>
 
 <template>
   <header>
-    <router-link :to="{ name: 'home' }">
+    <router-link :to="{ name: 'home'}" @click="clearCache">
       <div class="logo-wrapper">
         <img src="../assets/logo_babines.svg" alt="logo" />
       </div>

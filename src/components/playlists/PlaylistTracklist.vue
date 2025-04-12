@@ -35,15 +35,6 @@ watch(
   { immediate: true }
 )
 
-// onUpdated(() => {
-//   if (props.id) {
-//     tracks.value = store.fetchPlaylistById(props.id).track
-//   } else {
-//     tracks.value = store.likedTracks
-//   }
-// })
-
-
 const goToVideoView = () => {
   router.push({
     name: 'GetVideoView',
