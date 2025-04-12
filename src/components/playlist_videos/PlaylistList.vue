@@ -17,7 +17,7 @@ const props = defineProps({
 
 async function fetchPlaylists() {
   playlists.value = await store.fetchAllPlaylists()
-  console.log('playlists', playlists.value)
+  // console.log('playlists', playlists.value)
 }
 fetchPlaylists()
 const emit = defineEmits(['selectPlaylist']);
