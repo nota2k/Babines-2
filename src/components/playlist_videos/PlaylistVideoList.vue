@@ -19,15 +19,13 @@ const props = defineProps({
 watch(
   () => route.params.id,
   (newId) => {
-    if(!newId) {
-      return
-    }
-    if (newId) {
-      store.fetchVideosByPlaylist(newId)
-      playlist.value = store.playlists.find(playlist => playlist.id === newId)}
+    if (!newId) return; // Ignore si l'ID est manquant
+    store.fetchVideosByPlaylist(newId);
+    playlist.value = store.playlists.find((playlist) => playlist.id === newId);
   },
   { immediate: true }
-)
+);
+
 </script>
 
 <template>

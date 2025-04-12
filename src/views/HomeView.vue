@@ -1,6 +1,5 @@
 <script setup>
 import { ref, onMounted, watch} from 'vue'
-import { useRoute } from 'vue-router'
 import Header from '@/components/Header.vue'
 import Aside from '@/components/Aside.vue'
 

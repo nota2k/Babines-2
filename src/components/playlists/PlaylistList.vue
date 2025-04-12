@@ -4,16 +4,11 @@ import { storeToRefs } from 'pinia'
 import { userSpotifyStore } from '@/stores/spotify.js'
 
 const store = userSpotifyStore()
-let { loading } = storeToRefs(store);
 
 const props = defineProps({
   page: String,
   playlists: {
     type: Array,
-    required: true
-  },
-  loading: {
-    type: Boolean,
     required: true
   }
 });

@@ -74,8 +74,9 @@ const emit = defineEmits(['selectPlaylist']);
   flex-direction: column;
   align-items: center;
   border: 2px solid black;
-  max-height: 80vh;
+  /* max-height: 80vh; */
   position: relative;
+  height: 55vh;
 }
 
 h2 {
