@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import allPlaylistsData from '../data/allPlaylist.js'; // Import du fichier JSON
-import likedTracksData from '../data/likedTracks.js/index.js'; // Import du fichier JSON
+import likedTracksData from '../data/likedTracks.js'; // Import du fichier JSON
 
 export const userSpotifyStore = defineStore('spotify', {
   state: () => ({
