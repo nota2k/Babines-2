@@ -15,12 +15,12 @@ watch(
   { immediate: true }
 )
 
-const emit = defineEmits(['clearCache'])
+// const emit = defineEmits(['clearCache'])
 </script>
 
 <template>
   <header>
-    <router-link :to="{ name: 'home'}" @click="clearCache">
+    <router-link :to="{ name: 'home'}">
       <div class="logo-wrapper">
         <img src="../assets/logo_babines.svg" alt="logo" />
       </div>

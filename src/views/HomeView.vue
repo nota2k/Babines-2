@@ -10,27 +10,20 @@ import { userSpotifyStore } from '@/stores/spotify'
 
 
 const store = userSpotifyStore();
-const selectedPlaylistId = ref(null); // Playlist sélectionnée
-
-const route = useRoute();
-watch(
-  () => route.params.id,
-  async (newId) => {
-    if (newId) {
-      selectedPlaylistId.value = newId; // Met à jour l'ID de la playlist
-      await store.currentPlaylist; // Récupère les tracks pour la playlist
-    }
-  },
-  { immediate: true }
-);
+const selectedPlaylist = ref(null); // Playlist sélectionnée
 
 const handleSelectPlaylist = async (id) => {
-  selectedPlaylistId.value = id; // Met à jour l'ID sélectionné
-  // console.log('Selected playlist ID:', id);
+  selectedPlaylist.value = id; // Met à jour l'ID sélectionné
+  if (id) {
+    await store.fetchTracksByPlaylist(id); // Charge les morceaux de la playlist sélectionnée
+  } else {
+    store.tracksByPlaylist = store.likedTracks; // Utilise les morceaux likés par défaut
+  }
 };
 
 onMounted(() => {
   store.fetchAllPlaylists(); // Charge toutes les playlists au montage
+  store.tracksByPlaylist = store.likedTracks; // Définit les morceaux likés par défaut
 });
 
 </script>
@@ -48,7 +41,7 @@ onMounted(() => {
       </div>
     </div>
     <Aside />
-    <PlaylistTracklist :id="selectedPlaylistId" @clearCache="store.likedTracks"/>
+    <PlaylistTracklist :playlist="selectedPlaylist"/>
   </main>
 </template>
 

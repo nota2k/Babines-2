@@ -13,7 +13,10 @@ let isSortedAsc = ref(true)
 let sortedBy = ref('')
 
 const props = defineProps({
-  id: String
+  playlist: String,
+  id: {
+    type: String,
+  }
 })
 
 watch(
