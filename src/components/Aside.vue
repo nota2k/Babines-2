@@ -1,19 +1,32 @@
 <script setup lang="ts">
-import { defineEmits } from 'vue'
-// import axios from 'axios'
+import { defineEmits } from 'vue';
+import { userSpotifyStore } from '@/stores/spotify';
 
-const emit = defineEmits(['exportJson', 'clearCache'])
+const emit = defineEmits(['exportJson', 'clearCache']);
+const store = userSpotifyStore();
 
 function syncLikedTrack() {
-  // axios
-  //   .get(`https://pantagruweb.club/tentacules/webhook/babines/liked?cache=false`)
-  //   .then((response) => {
-  //     console.log(response.data)
-  //     // videoData.value = response.data
-  //   })
-  emit('clearCache')
+  emit('clearCache');
 }
-</script>
+
+function exportCurrentPlaylist() {
+  const playlist = store.tracksByPlaylist; // Récupère la playlist courante
+  if (!playlist || playlist.length === 0) {
+    alert('Aucune playlist à exporter.');
+    return;
+  }
+
+  const json = JSON.stringify(playlist, null, 2); // Convertit en JSON formaté
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'playlist.json'; // Nom du fichier exporté
+  link.click();
+
+  URL.revokeObjectURL(url); // Libère l'URL après utilisation
+}</script>
 
 <template>
   <aside>
@@ -33,7 +46,7 @@ function syncLikedTrack() {
         </a>
       </li>
       <li>
-        <a href="#" class="button primary" @click.prevent="emit('exportJson')">
+        <a href="#" class="button primary" @click="exportCurrentPlaylist">
           <img class="dog" src="../assets/dog_3.svg" />
           <div class="label">
             <p>Expaw</p>
