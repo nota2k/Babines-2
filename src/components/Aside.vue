@@ -1,20 +1,23 @@
 <script setup lang="ts">
-import { defineEmits } from 'vue';
+import { defineEmits,ref, watch } from 'vue';
 import { userSpotifyStore } from '@/stores/spotify';
 import { userYoutubeStore } from '@/stores/youtube';
+import db from '@/services/db.js';
+import { useRoute } from 'vue-router';
+import { c } from 'vite/dist/node/moduleRunnerTransport.d-CXw_Ws6P';
 
 const emit = defineEmits(['exportJson', 'clearCache']);
-const spotify = userSpotifyStore();
-const youtube = userYoutubeStore();
+const storeSpotify = userSpotifyStore();
+const storeYoutube = userYoutubeStore();
 
 function syncLikedTrack() {
   emit('clearCache');
 }
 
 function exportCurrentPlaylist() {
-  const playlist = spotify.tracksByPlaylist; // Récupère la playlist courante
-  const youtubePlaylist = youtube.currentPlaylist; // Récupère la playlist Youtube
-  console.log('playlist', youtubePlaylist);
+  const playlist = storeSpotify.tracksByPlaylist; // Récupère la playlist courante
+  const youtubePlaylist = storeYoutube.currentPlaylist; // Récupère la playlist Youtube
+
   if (!playlist || playlist.length === 0) {
     alert('Aucune playlist à exporter.');
     return;
@@ -34,18 +37,97 @@ function exportCurrentPlaylist() {
   link.click();
 
   URL.revokeObjectURL(url); // Libère l'URL après utilisation
-}</script>
+}
+
+const apiData = ref([]);
+let tracks = ref([]);
+let playlist = ref<{ id: string; name?: string; description?: string; uri?: string; href?: string } | null>(null);
+
+const route = useRoute();
+watch(
+  () => route.params.id,
+  (newId) => {
+    if (newId) {
+      // Récupérer les données de la playlist et des morceaux
+      tracks.value = storeSpotify.tracksByPlaylist; // Liste des morceaux
+      playlist.value = storeSpotify.playlists.find(playlist => playlist.id === newId); // Playlist avec l'ID spécifique
+    }
+    // Vérifie si playlist et tracks sont définis avant de les utiliser
+    if (playlist.value && tracks.value) {
+      apiData.value = tracks.value.map((track) => ({
+        artist: track.track.artist,
+        album: track.track.album,
+        added_at: track.track.added_at,
+        track_id: track.track.track_id,
+        playlist: {
+          name: playlist.value.name,
+          description: playlist.value.description,
+          uri: playlist.value.uri,
+          id: playlist.value.id,
+          href: playlist.value.href,
+        },
+      }));
+    }
+  },
+  { immediate: true }
+)
+
+const fetchAndInsert = async () => {
+  try {
+    console.log('apiData', apiData.value);
+
+    // 2. Insertion dans CouchDB
+    for (const item of apiData.value) {
+      // Adapte cette structure à ce que retourne ton API
+      const doc = {
+        _id: item.track_id, // utile pour éviter les doublons
+        track_id: item.track_id,
+        artist: item.artist,
+        album: item.album,
+        added_at: item.added_at,
+        playlist: {
+          name: item.playlist.name,
+          description: item.playlist.description,
+          uri: item.playlist.uri,
+          id: item.playlist.id,
+          href: item.playlist.href
+        }
+      };
+
+      console.log('doc', doc);
+
+      try {
+        await db.put(doc);
+      } catch (err: any) {
+        // Si le document existe déjà, on peut le mettre à jour par exemple
+        if (err.name === 'conflict') {
+          const existing = await db.get(doc._id);
+          await db.put({
+            ...existing,
+            ...doc
+          });
+        } else {
+          console.error('Erreur insertion CouchDB :', err);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Erreur API :', error);
+  }
+};
+
+</script>
 
 <template>
   <aside>
     <ul class="actions">
       <li>
-        <button id="sync" href="#" class="button primary" @click="syncLikedTrack()">
-          <img class="dog" src="../assets/dog_1.svg" />
-          <div class="label">
-            <p>Sync</p>
-            <img src="../assets/sync.png" />
-          </div>
+        <button id="sync" href="#" class="button primary" @click="fetchAndInsert">
+          <img class=" dog" src="../assets/dog_1.svg" />
+        <div class="label">
+          <p>Sync</p>
+          <img src="../assets/sync.png" />
+        </div>
         </button>
       </li>
       <li>

@@ -1,0 +1,30 @@
+{
+  "_id": "baa61fdcac2000d3baf8a373a70005ee",
+  "spotify":{
+    "playlists":[{
+      "id":"efzfzeevv45452",
+      "name":"NEW WAVE",
+      "description":"lorem ipsum",
+      "tracks":[{
+        "id":"pojefpoafejnn445",
+        "title":"Never Come Back",
+        "artist":"Kas Product",
+        "added_at":"2018-03-18",
+        "album":"Never Come back"
+      }]
+    }]
+    
+  },
+    "likedTracks":{
+      "id":"efzfzeevv45452",
+      "name":"NEW WAVE",
+      "description":"lorem ipsum",
+      "tracks":[{
+        "id":"pojefpoafejnn445",
+        "title":"Never Come Back",
+        "artist":"Kas Product",
+        "added_at":"2018-03-18",
+        "album":"Never Come back"
+      }]
+    }
+}

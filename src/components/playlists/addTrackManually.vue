@@ -1,12 +1,36 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import db from '@/services/db.js';
+import { ref, onMounted } from 'vue';
+
+const title = ref('');
+const artist = ref('');
+const url = ref('');
+const documents = ref([]);
+
+const addDocument = async () => {
+  if (!title.value || !artist.value || !url.value) return;
+
+  await db.post({
+    title: title.value,
+    artist: artist.value,
+    url: url.value,
+    created_at: new Date().toISOString()
+  });
+
+  // Réinitialise les champs
+  title.value = '';
+  artist.value = '';
+  url.value = '';
+};
+</script>
 
 <template>
   <div class="add-wrapper">
     <h2>Ajouter un morceau</h2>
-    <form>
-      <input placeholder="Titre" type="text" id="title" name="title" />
-      <input type="text" placeholder="Artiste" id="artist" name="artist" />
-      <input type="text" placeholder="Lien" id="url" name="lien" />
+    <form @submit.prevent="addDocument">
+      <input v-model="title" placeholder="Titre" type="text" id="title" name="title" />
+      <input v-model="artist" type="text" placeholder="Artiste" id="artist" name="artist" />
+      <input v-model="url" type="text" placeholder="Lien" id="url" name="lien" />
       <button type="submit" class="yellow">
         <div class="add-icon"></div>
       </button>

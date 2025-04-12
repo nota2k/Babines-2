@@ -22,19 +22,6 @@ export const userSpotifyStore = defineStore('spotify', {
       }
     },
 
-    // async fetchLikedTracks() {
-    //   try {
-    //     this.loading = true;
-    //     this.likedTracks = likedTracksData; // Charge les morceaux likés
-    //     return this.likedTracks; // Retourne les morceaux likés
-    //   } catch (error) {
-    //     console.error('Error fetching liked tracks:', error);
-    //     return [];
-    //   } finally {
-    //     this.loading = false;
-    //   }
-    // },
-
     async fetchPlaylistById(id) {
       if(!id) {
         return this.likedTracks;

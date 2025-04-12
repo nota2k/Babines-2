@@ -10,9 +10,16 @@ export default defineConfig({
     vue(),
     vueDevTools(),
   ],
+  define: {
+    global: {},
+  },
+  optimizeDeps: {
+    include: ['events'],
+  },
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      events: 'events/'
     },
   },
 })

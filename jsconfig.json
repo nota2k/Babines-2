@@ -2,7 +2,8 @@
   "compilerOptions": {
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+     "allowSyntheticDefaultImports": true
   },
   "exclude": ["node_modules", "dist"]
 }
