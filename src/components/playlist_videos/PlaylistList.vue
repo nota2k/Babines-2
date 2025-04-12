@@ -10,7 +10,7 @@ let { loading } = storeToRefs(store);
 const props = defineProps({
   page: String,
   playlists: {
-    type: Array,
+    type: Object,
     required: true
   },
   loading: {
@@ -19,13 +19,10 @@ const props = defineProps({
   }
 });
 
-watch(
-  () => store.playlists,
-  (newPlaylists) => {
-    playlists.value = newPlaylists;
-  },
-  { immediate: true }
-);
+onMounted(() => {
+  playlists.value = store.playlists
+});
+
 const emit = defineEmits(['selectPlaylist']);
 
 </script>

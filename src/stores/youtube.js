@@ -4,6 +4,7 @@ export const userYoutubeStore = defineStore('youtube', {
   state: () => ({
     playlists: [],
     currentPlaylist: [],
+    videos: [],
     loading: false,
     error: null
   }),
@@ -36,17 +37,28 @@ export const userYoutubeStore = defineStore('youtube', {
       }
     },
 
-    async fetchAllVideoById(id) {
+    async fetchVideosByPlaylist(id) {
+      this.loading = true;
+      this.error = null;
 
       try {
-        const data = await fetch(
+        const response = await fetch(
           `https://tentacules.pantagruweb.club/webhook/youtube?id=${id}`
         );
-        this.currentPlaylist = data;
-        return this.currentPlaylist; // Retourne les playlists
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        this.videos = data;
+        return data; // Retourne les données après traitement JSON
       } catch (error) {
-        console.error('Error fetching playlists:', error);
+        console.error('Error fetching videos:', error);
+        this.error = error.message;
         return [];
+      } finally {
+        this.loading = false;
       }
     }
   }
