@@ -20,3 +20,53 @@ body {
     display: none;
   }
 }
+.to-youtube {
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.youtube-to-spotify {
+  grid-column-start: 1;
+  grid-row-start: 3;
+  width: 100%;
+  height: 100%;
+  background: var(--yellow);
+  padding: 1em;
+  border: 2px solid black;
+  transition: 0.2s ease-in-out all;
+  box-sizing: border-box;
+}
+
+.os {
+  width: 100%;
+  height: 100%;
+    transition: 0.2s ease-in-out all;
+
+}
+
+.img-wrapper {
+  width: -moz-available;
+  max-width: 180px;
+}
+
+.youtube-to-spotify p{
+  color:black;
+  font-weight: 600;
+  line-height: 0.5em;
+  font-size: 1.5em;;
+    transition: 0.2s ease-in-out all;
+
+}
+
+.youtube-to-spotify:hover{
+  background: black;
+}
+
+.youtube-to-spotify:hover p{
+  color: white;
+}
+
+.youtube-to-spotify:hover .os{
+  filter: invert(1);
+}

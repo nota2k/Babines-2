@@ -102,30 +102,4 @@ button {
   border: none;
 }
 
-.to-youtube {
-  display: inline-flex;
-  justify-content: center;
-  width: 100%;
-}
-
-.youtube-to-spotify {
-  grid-column-start: 1;
-  grid-row-start: 3;
-  width: 100%;
-  height: 100%;
-  background: var(--yellow);
-  padding: 1em;
-  border: 2px solid black;
-  box-sizing: border-box;
-}
-
-.os {
-  width: 100%;
-  height: 100%;
-}
-
-.img-wrapper {
-  width: -moz-available;
-  max-width: 180px;
-}
 </style>
