@@ -6,6 +6,10 @@ on:
   # onl run this workflow on pull request events
   pull_request
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   create_review_app:
     runs-on: ubuntu-latest
