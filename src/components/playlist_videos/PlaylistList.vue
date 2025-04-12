@@ -10,15 +10,10 @@ const props = defineProps({
   page: String
 });
 
-// onMounted(() => {
-//   playlists.value = store.fetchAllPlaylists()
-//   // console.log('playlists', playlists.value)
-// });
-
 async function fetchPlaylists() {
   playlists.value = await store.fetchAllPlaylists()
-  // console.log('playlists', playlists.value)
 }
+
 fetchPlaylists()
 const emit = defineEmits(['selectPlaylist']);
 
@@ -31,7 +26,10 @@ const emit = defineEmits(['selectPlaylist']);
         <button class="close" @click="$emit('close')">Fermer</button>
         <h2>{{props.page}}</h2>
         <ul>
-          <router-link :to="{ name: 'oneplaylist', params: { id: playlist.id }}" v-for="playlist in playlists" :key="playlist.id">
+            <router-link
+            :to="playlist.id ? { name: 'oneplaylist', params: { id: playlist.id } } : undefined"
+            v-for="playlist in playlists"
+            :key="playlist.id">
             <li class="playlist-item" @click="$emit('selectPlaylist', playlist.id)">
               {{ playlist.title }}
             </li>

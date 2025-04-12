@@ -15,6 +15,7 @@ let sortedBy = ref('')
 const props = defineProps({
   id: {
     type: String,
+    default: null
   }
 })
 

@@ -24,8 +24,8 @@ const emit = defineEmits(['selectPlaylist']);
 
 <template>
   <div class="playlist-wrapper">
-    <div v-if="loading">Chargement...</div>
-    <div v-else>
+    <!-- <div v-if="loading">Chargement...</div> -->
+    <div>
       <div class="container">
         <button class="close" @click="$emit('close')">Fermer</button>
         <h2>{{props.page}}</h2>

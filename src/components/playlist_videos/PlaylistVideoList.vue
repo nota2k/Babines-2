@@ -12,6 +12,7 @@ const videos = ref([]) // Définir videos pour qu'il soit accessible dans le tem
 const props = defineProps({
   id: {
     type: String,
+    default: null
   }
 })
 
@@ -36,7 +37,7 @@ watch(
         {{ store.currentPlaylist?.title ? store.currentPlaylist.title : 'Toutes les vidéos' }}
       </h2>
 
-      <div class="videos-container" v-if="!loading">
+      <div class="videos-container">
         <div class="video-item" v-for="video in store.playlists" :key="video.id"
           :class="{ 'deleted-video': video.title === 'Deleted video' || video.title === 'Private video' }">
           <router-link :to="{ name: 'oneplaylist', params: { id: video.id } }">

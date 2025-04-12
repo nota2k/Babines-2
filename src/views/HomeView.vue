@@ -31,8 +31,8 @@ onMounted(() => {
 <template>
   <main>
     <Header />
-    <PlaylistList page="Playlists Spawtify" :playlists="store.playlists" :loading="store.loading"
-      @selectPlaylist="handleSelectPlaylist" :key="home"/>
+    <PlaylistList page="Playlists Spawtify" :playlists="store.playlists"
+      @selectPlaylist="handleSelectPlaylist" key="home"/>
 
     <div class="youtube-to-spotify">
       <router-link :to="{ name: 'videos' }">
