@@ -1,8 +1,8 @@
-[
+const likedTracksData = [
   {
     "track": {
       "artist": "Talking Heads",
-      "title": "Burning Down the House",
+      "title": "Burning Down  the House",
       "added_at": "2025-04-07T14:34:51Z",
       "album": "Burning Down the House / I Get Wild / Wild Gravity",
       "track_id": "2VNfJpwdEQBLyXajaa6LWT"
@@ -450,3 +450,5 @@
     }
   }
 ]
+
+export default likedTracksData;

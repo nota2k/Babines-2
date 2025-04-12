@@ -1,4 +1,4 @@
-[
+const allPlaylistsData = [
   {
     "name": "BAT BEAT",
     "description": "",
@@ -1231,4 +1231,6 @@
     "id": "1RubzYjVIFmSMH4ktXMkfK",
     "href": "https://api.spotify.com/v1/playlists/1RubzYjVIFmSMH4ktXMkfK"
   }
-]
+];
+
+export default allPlaylistsData;
