@@ -1,16 +1,20 @@
 <script setup>
-import { ref, onMounted,} from 'vue'
+import { ref, onMounted, watch} from 'vue'
 import Header from '@/components/Header.vue'
 import Aside from '@/components/Aside.vue'
 
-import PlaylistList from '@/components/playlists/PlaylistList.vue'
+import PlaylistList from '@/components/playlist_videos/PlaylistList.vue'
+import {userYoutubeStore} from '@/stores/youtube'
 
+const store = userYoutubeStore();
+const selectedPlaylistId = ref(null); // Playlist sélectionnée
 
 const handleSelectPlaylist = async (id) => {
-  // selectedPlaylistId.value = id; // Met à jour l'ID sélectionné
+  selectedPlaylistId.value = id; // Met à jour l'ID sélectionné
 };
 
 onMounted(() => {
+  store.fetchAllPlaylists(); // Charge toutes les playlists au montage
 });
 
 </script>
@@ -18,7 +22,8 @@ onMounted(() => {
 <template>
   <main>
     <Header />
-    <PlaylistList page="Playlist Youtruffe"/>
+    <PlaylistList page="Playlist Youtruffe" :playlists="store.playlists" :loading="store.loading"
+      @selectPlaylist="handleSelectPlaylist" />
     <div class="youtube-to-spotify">
       <div class="container flex column">
         <div class="img-wrapper">

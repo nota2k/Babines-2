@@ -23,6 +23,12 @@ const router = createRouter({
       component: VideolistView,
       props: true
     },
+    {
+      path: '/video/playlist/:id',
+      name: 'oneplaylist',
+      component: VideolistView,
+      props: true
+    },
   ],
 })
 
