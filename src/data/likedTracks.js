@@ -1,4 +1,4 @@
-[
+const likedTracksData = [
   {
     "track": {
       "artist": "Talking Heads",
@@ -450,3 +450,5 @@
     }
   }
 ]
+
+export default likedTracksData;
