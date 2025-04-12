@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, defineProps, onBeforeMount, onUpdated, watch } from 'vue'
-// import AddTrackManually from '../addTrackManually.vue'
+import AddTrackManually from './addTrackManually.vue'
 import { userSpotifyStore } from '@/stores/spotify';
 import { useRoute } from 'vue-router'
 
@@ -94,7 +94,7 @@ const sortTracksByAdded = (event) => {
   <!-- <div v-if="loading">Chargement...</div> -->
   <div class="tracklist-wrapper">
     <div class="container">
-      <!-- <AddTrackManually /> -->
+      <AddTrackManually />
       <h2 class="playlist-name">
         {{
           store.currentPlaylist?.name
