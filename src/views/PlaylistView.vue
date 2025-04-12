@@ -36,17 +36,21 @@ onMounted(() => {
 <template>
   <main>
     <Header />
-    <PlaylistList :playlists="store.playlists" :loading="store.loading" @selectPlaylist="handleSelectPlaylist" />
+    <PlaylistList page="Playlist Spawtify" :playlists="store.playlists" :loading="store.loading" @selectPlaylist="handleSelectPlaylist" />
+
+
     <div class="youtube-to-spotify">
-      <div class="container flex column">
-        <div class="img-wrapper">
-          <img class="os" src="../assets/os.svg" alt="os" />
+      <router-link :to="{ name: 'videos' }">
+        <div class="container flex column">
+          <div class="img-wrapper">
+            <img class="os" src="../assets/os.svg" alt="os" />
+          </div>
+          <p>Youtube</p>
         </div>
-        <p>Youtube</p>
-      </div>
+      </router-link>
     </div>
     <Aside />
-    <PlaylistTracklist :id="selectedPlaylistId" @clearCache="store.likedTracks"/>
+    <PlaylistTracklist :id="selectedPlaylistId" @clearCache="store.likedTracks" />
   </main>
 </template>
 

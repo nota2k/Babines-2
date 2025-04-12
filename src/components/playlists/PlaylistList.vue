@@ -6,7 +6,8 @@ import { userSpotifyStore } from '@/stores/spotify.js'
 const store = userSpotifyStore()
 let { loading } = storeToRefs(store);
 
-defineProps({
+const props = defineProps({
+  page: String,
   playlists: {
     type: Array,
     required: true
@@ -27,7 +28,7 @@ const emit = defineEmits(['selectPlaylist']);
     <div v-else>
       <div class="container">
         <button class="close" @click="$emit('close')">Fermer</button>
-        <h2>Playlists Spawtify</h2>
+        <h2>{{props.page}}</h2>
         <ul>
           <router-link :to="{ name: 'playlist', params: { id: playlist.id }}" v-for="playlist in playlists" :key="playlist.id">
             <li class="playlist-item" @click="$emit('selectPlaylist', playlist.id)">

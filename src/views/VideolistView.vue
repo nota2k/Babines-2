@@ -1,29 +1,16 @@
 <script setup>
-import { ref, onMounted, watch} from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, onMounted,} from 'vue'
 import Header from '@/components/Header.vue'
 import Aside from '@/components/Aside.vue'
 
 import PlaylistList from '@/components/playlists/PlaylistList.vue'
-import PlaylistTracklist from '@/components/playlists/PlaylistTracklist.vue'
-import { userSpotifyStore } from '@/stores/spotify'
 
-
-const store = userSpotifyStore();
-const selectedPlaylist = ref(null); // Playlist sélectionnée
 
 const handleSelectPlaylist = async (id) => {
-  selectedPlaylist.value = id; // Met à jour l'ID sélectionné
-  if (id) {
-    await store.fetchTracksByPlaylist(id); // Charge les morceaux de la playlist sélectionnée
-  } else {
-    store.tracksByPlaylist = store.likedTracks; // Utilise les morceaux likés par défaut
-  }
+  // selectedPlaylistId.value = id; // Met à jour l'ID sélectionné
 };
 
 onMounted(() => {
-  store.fetchAllPlaylists(); // Charge toutes les playlists au montage
-  store.tracksByPlaylist = store.likedTracks; // Définit les morceaux likés par défaut
 });
 
 </script>
@@ -31,21 +18,17 @@ onMounted(() => {
 <template>
   <main>
     <Header />
-    <PlaylistList page="Playlists Spawtify" :playlists="store.playlists" :loading="store.loading"
-      @selectPlaylist="handleSelectPlaylist" />
-
+    <PlaylistList page="Playlist Youtruffe"/>
     <div class="youtube-to-spotify">
-      <router-link :to="{ name: 'videos' }">
-        <div class="container flex column">
-          <div class="img-wrapper">
-            <img class="os" src="../assets/os.svg" alt="os" />
-          </div>
-          <p>Youtube</p>
+      <div class="container flex column">
+        <div class="img-wrapper">
+          <img class="os" src="../assets/os.svg" alt="os" />
         </div>
-      </router-link>
+        <p>Youtube</p>
+      </div>
     </div>
     <Aside />
-    <PlaylistTracklist :playlist="selectedPlaylist" />
+    <PlaylistTracklist />
   </main>
 </template>
 
