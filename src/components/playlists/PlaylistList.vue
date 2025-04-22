@@ -8,8 +8,7 @@ const store = userSpotifyStore()
 const props = defineProps({
   page: String,
   playlists: {
-    type: Array,
-    required: true
+    type: Array
   }
 });
 
@@ -40,23 +39,6 @@ const emit = defineEmits(['selectPlaylist']);
 .playlist-wrapper {
   grid-column-start: 1;
 }
-
-.close {
-  width: 50px;
-  height: 50px;
-  background-color: var(--yellow);
-  display: none;
-  position: absolute;
-  right: -45px;
-  z-index: 50;
-  transform-origin: left;
-  border-radius: 0 40px 40px 0;
-}
-
-  .close {
-    display: block;
-  }
-
 .container {
   display: flex;
   flex-direction: column;
@@ -98,22 +80,6 @@ li:nth-child(odd) {
 .playlist-wrapper {
   grid-column-start: 1;
 }
-
-.close {
-  width: 50px;
-  height: 50px;
-  background-color: var(--yellow);
-  display: none;
-  position: absolute;
-  right: -45px;
-  z-index: 50;
-  transform-origin: left;
-  border-radius: 0 40px 40px 0;
-}
-
-  .close {
-    display: block;
-  }
 
 .container {
   display: flex;

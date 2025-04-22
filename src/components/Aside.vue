@@ -66,18 +66,19 @@ function syncLikedTrack() {
   emit('clearCache');
 }
 
-function exportCurrentPlaylist() {
+
+function exportCurrentPlaylist(tracks) {
   const playlist = storeSpotify.tracksByPlaylist;
-  const youtubePlaylist = storeYoutube.currentPlaylist;
+  // const youtubePlaylist = storeYoutube.currentPlaylist;
 
-  if (!playlist || playlist.length === 0) {
-    return;
-  }
-  if (!youtubePlaylist || youtubePlaylist.length === 0) {
-    return;
-  }
+  // if (!playlist || playlist.length === 0) {
+  //   return;
+  // }
+  // if (!youtubePlaylist || youtubePlaylist.length === 0) {
+  //   return;
+  // }
 
-  const json = JSON.stringify(playlist, null, 2);
+  const json = JSON.stringify(tracks, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
 

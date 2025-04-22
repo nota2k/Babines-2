@@ -45,22 +45,6 @@ const emit = defineEmits(['selectPlaylist']);
   grid-column-start: 1;
 }
 
-.close {
-  width: 50px;
-  height: 50px;
-  background-color: var(--yellow);
-  display: none;
-  position: absolute;
-  right: -45px;
-  z-index: 50;
-  transform-origin: left;
-  border-radius: 0 40px 40px 0;
-}
-
-.close {
-  display: block;
-}
-
 .container {
   display: flex;
   flex-direction: column;
@@ -104,32 +88,11 @@ li:nth-child(odd) {
   grid-column-start: 1;
 }
 
-.close {
-  width: 50px;
-  height: 50px;
-  background-color: var(--yellow);
-  display: none;
-  position: absolute;
-  right: -45px;
-  z-index: 50;
-  transform-origin: left;
-  border-radius: 0 40px 40px 0;
-}
-
 @media screen and (max-width: 768px) {
   .playlist-wrapper {
     position: fixed;
     transform: translateX(-100%);
     top: 130px;
-  }
-
-  .close {
-    display: block;
-    width: 70px;
-    right: -70px;
-    border-radius: 0 50px 50px 0;
-    border: solid 2px black;
-    top: -90px;
   }
 }
 

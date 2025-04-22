@@ -31,9 +31,11 @@ console.log(selectedPlaylist.value); // Affiche l'ID de la playlist sélectionn�
 <template>
   <main>
     <Header />
-    <PlaylistList page="Playlists Spawtify" :playlists="store.playlists"
-      @selectPlaylist="handleSelectPlaylist" key="home"/>
-
+    <PlaylistList page="Playlists Spawtify" :playlists="store.playlists" @selectPlaylist="handleSelectPlaylist"
+      key="home" />
+    <router-link class="registered-playlist" :to="{ name: 'getData' }">
+        <h3>Liste complète</h3>
+    </router-link>
     <div class="youtube-to-spotify">
       <router-link :to="{ name: 'videos' }">
         <div class="container flex column">
