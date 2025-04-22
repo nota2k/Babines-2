@@ -224,6 +224,15 @@ tbody th {
   font-weight: normal;
 }
 
+@media screen and (max-width: 768px) {
+  tbody tr {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+  }
+
+}
+
 tbody tr:nth-child(odd) {
   background-color: #f9f9f9;
 }

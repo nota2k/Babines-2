@@ -47,6 +47,12 @@ const addDocument = async () => {
 .add-wrapper h2 {
   margin: 0;
 }
+@media screen and (max-width: 768px) {
+  .add-wrapper h2{
+    margin: 20px auto;
+  }
+
+}
 
 form {
   display: flex;

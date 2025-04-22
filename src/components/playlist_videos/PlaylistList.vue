@@ -57,16 +57,8 @@ const emit = defineEmits(['selectPlaylist']);
   border-radius: 0 40px 40px 0;
 }
 
-@media screen and (max-width: 768px) {
-  .playlist-wrapper {
-    position: fixed;
-    transform: translateX(-100%);
-    top: 130px;
-  }
-
-  .close {
-    display: block;
-  }
+.close {
+  display: block;
 }
 
 .container {
@@ -133,6 +125,11 @@ li:nth-child(odd) {
 
   .close {
     display: block;
+    width: 70px;
+    right: -70px;
+    border-radius: 0 50px 50px 0;
+    border: solid 2px black;
+    top: -90px;
   }
 }
 

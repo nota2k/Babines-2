@@ -56,13 +56,22 @@ watch(
   flex-wrap: wrap;
   justify-content: flex-start;
   padding:20px;
+  gap: 10px;
 }
 
 .video-item {
   width: calc(100% / 4 - 20px);
-  margin: 0 10px;
+  margin: 0 auto;
   height: fit-content;
   /* flex-grow: 2; */
+}
+
+@media screen and (max-width: 768px) {
+  .video-item {
+    width: calc((100% / 2) - 10px);
+    text-align: center;
+  }
+
 }
 
 .deleted-video {

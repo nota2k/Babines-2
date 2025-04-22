@@ -53,17 +53,9 @@ const emit = defineEmits(['selectPlaylist']);
   border-radius: 0 40px 40px 0;
 }
 
-@media screen and (max-width: 768px) {
-  .playlist-wrapper {
-    position: fixed;
-    transform: translateX(-100%);
-    top: 130px;
-  }
-
   .close {
     display: block;
   }
-}
 
 .container {
   display: flex;
@@ -119,17 +111,9 @@ li:nth-child(odd) {
   border-radius: 0 40px 40px 0;
 }
 
-@media screen and (max-width: 768px) {
-  .playlist-wrapper {
-    position: fixed;
-    transform: translateX(-100%);
-    top: 130px;
-  }
-
   .close {
     display: block;
   }
-}
 
 .container {
   display: flex;

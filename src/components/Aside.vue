@@ -1,59 +1,31 @@
 <script setup lang="ts">
-import { defineEmits,ref, watch } from 'vue';
+import { defineEmits, ref, watch, onMounted } from 'vue';
 import { userSpotifyStore } from '@/stores/spotify';
 import { userYoutubeStore } from '@/stores/youtube';
 import db from '@/services/db.js';
 import { useRoute } from 'vue-router';
-import { c } from 'vite/dist/node/moduleRunnerTransport.d-CXw_Ws6P';
 
 const emit = defineEmits(['exportJson', 'clearCache']);
 const storeSpotify = userSpotifyStore();
 const storeYoutube = userYoutubeStore();
+const route = useRoute();
 
-function syncLikedTrack() {
-  emit('clearCache');
-}
-
-function exportCurrentPlaylist() {
-  const playlist = storeSpotify.tracksByPlaylist; // Récupère la playlist courante
-  const youtubePlaylist = storeYoutube.currentPlaylist; // Récupère la playlist Youtube
-
-  if (!playlist || playlist.length === 0) {
-    alert('Aucune playlist à exporter.');
-    return;
-  }
-  if (!youtubePlaylist || youtubePlaylist.length === 0) {
-    alert('Aucune playlist Youtube à exporter.');
-    return;
-  }
-
-  const json = JSON.stringify(playlist, null, 2); // Convertit en JSON formaté
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'playlist.json'; // Nom du fichier exporté
-  link.click();
-
-  URL.revokeObjectURL(url); // Libère l'URL après utilisation
-}
-
-const apiData = ref([]);
+let apiData = ref([]);
 let tracks = ref([]);
 let playlist = ref<{ id: string; name?: string; description?: string; uri?: string; href?: string } | null>(null);
 
-const route = useRoute();
-watch(
-  () => route.params.id,
-  (newId) => {
-    if (newId) {
-      // Récupérer les données de la playlist et des morceaux
-      tracks.value = storeSpotify.tracksByPlaylist; // Liste des morceaux
-      playlist.value = storeSpotify.playlists.find(playlist => playlist.id === newId); // Playlist avec l'ID spécifique
-    }
-    // Vérifie si playlist et tracks sont définis avant de les utiliser
-    if (playlist.value && tracks.value) {
+// Fonction pour charger les données en fonction de l'ID
+async function loadPlaylistData(id: string) {
+  try {
+    // Récupère les informations de la playlist
+    playlist.value = await storeSpotify.fetchPlaylistById(id);
+
+    // Récupère les pistes de la playlist
+    const tracksData = await storeSpotify.fetchTracksByPlaylist(id);
+    tracks.value = tracksData;
+
+    // Formatage des données pour apiData
+    if (playlist.value && tracks.value.length > 0) {
       apiData.value = tracks.value.map((track) => ({
         artist: track.track.artist,
         album: track.track.album,
@@ -68,56 +40,121 @@ watch(
         },
       }));
     }
-  },
-  { immediate: true }
-)
+
+  } catch (error) {
+    console.error('Erreur lors du chargement des données:', error);
+  }
+}
+
+// Observer les changements de l'ID dans l'URL
+watch(() => route.params.id, (newId) => {
+  if (newId) {
+    loadPlaylistData(newId.toString());
+  }
+}, { immediate: true });
+
+// Charger les données au montage du composant si l'ID est présent
+onMounted(() => {
+  const id = route.params.id;
+  if (id) {
+    loadPlaylistData(id.toString());
+  }
+});
+
+function syncLikedTrack() {
+  emit('clearCache');
+}
+
+function exportCurrentPlaylist() {
+  const playlist = storeSpotify.tracksByPlaylist;
+  const youtubePlaylist = storeYoutube.currentPlaylist;
+
+  if (!playlist || playlist.length === 0) {
+    return;
+  }
+  if (!youtubePlaylist || youtubePlaylist.length === 0) {
+    return;
+  }
+
+  const json = JSON.stringify(playlist, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'playlist.json';
+  link.click();
+
+  URL.revokeObjectURL(url);
+}
 
 const fetchAndInsert = async () => {
   try {
-    console.log('apiData', apiData.value);
+    console.log('apiData pour insertion:', apiData.value);
 
-    // 2. Insertion dans CouchDB
+    // Vérification des données
+    if (!apiData.value || apiData.value.length === 0) {
+      console.error('Aucune donnée à synchroniser');
+      return;
+    }
+
+    // Préparer tous les documents pour l'insertion en bloc
+    const docsToInsert = [];
+    const existingIds = new Set();
+
+    // D'abord, récupérer tous les IDs existants
     for (const item of apiData.value) {
-      // Adapte cette structure à ce que retourne ton API
-      const doc = {
-        _id: item.track_id, // utile pour éviter les doublons
-        track_id: item.track_id,
-        artist: item.artist,
-        album: item.album,
-        added_at: item.added_at,
-        playlist: {
-          name: item.playlist.name,
-          description: item.playlist.description,
-          uri: item.playlist.uri,
-          id: item.playlist.id,
-          href: item.playlist.href
-        }
-      };
-
-      console.log('doc', doc);
-
       try {
-        await db.put(doc);
-      } catch (err: any) {
-        // Si le document existe déjà, on peut le mettre à jour par exemple
-        if (err.name === 'conflict') {
-          const existing = await db.get(doc._id);
-          await db.put({
-            ...existing,
-            ...doc
+        const existingDoc = await db.get(item.track_id);
+        existingIds.add(item.track_id);
+
+        // Préparer le document avec la révision existante
+        docsToInsert.push({
+          _id: item.track_id,
+          _rev: existingDoc._rev,
+          track_id: item.track_id,
+          artist: item.artist,
+          album: item.album,
+          added_at: item.added_at,
+          playlist: { /* ... */ },
+          last_updated: new Date().toISOString()
+        });
+      } catch (err) {
+        if (err.status === 404) {
+          // Document n'existe pas, l'ajouter sans révision
+          docsToInsert.push({
+            _id: item.track_id,
+            track_id: item.track_id,
+            artist: item.artist,
+            album: item.album,
+            added_at: item.added_at,
+            playlist: { /* ... */ },
+            last_updated: new Date().toISOString()
           });
         } else {
-          console.error('Erreur insertion CouchDB :', err);
+          console.error(`Erreur lors de la vérification de ${item.track_id}:`, err);
         }
       }
     }
+
+    // Insérer ou mettre à jour tous les documents en une seule opération
+    if (docsToInsert.length > 0) {
+      const results = await db.bulkDocs(docsToInsert);
+      console.log('Résultats des insertions en bloc:', results);
+
+      // Vérifier les résultats
+      const errors = results.filter(r => r.error);
+      if (errors.length > 0) {
+        console.error(`${errors.length} erreurs lors de l'insertion en bloc:`, errors);
+      } else {
+        console.log(`${results.length} documents insérés ou mis à jour avec succès!`);
+      }
+    }
   } catch (error) {
-    console.error('Erreur API :', error);
+    console.error('Erreur lors de la synchronisation :', error);
   }
 };
-
 </script>
-
 <template>
   <aside>
     <ul class="actions">
@@ -241,6 +278,8 @@ li img.dog {
     bottom: 0;
     position: fixed;
     top: initial;
+    left: 0;
+    right: 0;
   }
   ul {
     width: 100%;
@@ -249,6 +288,11 @@ li img.dog {
 
   li {
     flex-grow: 2;
+  }
+
+  li::before {
+    height: 70%;
+    width: 90%;
   }
 }
 </style>
