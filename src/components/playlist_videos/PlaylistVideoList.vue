@@ -9,12 +9,12 @@ let playlist = ref([])
 const videos = ref([]) // Définir videos pour qu'il soit accessible dans le template
 // const loading = ref(false)
 
-const props = defineProps({
-  id: {
-    type: String,
-    default: null
-  }
-})
+// const props = defineProps({
+//   id: {
+//     type: String,
+//     default: null
+//   }
+// })
 
 watch(
   () => route.params.id,

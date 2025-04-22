@@ -9,11 +9,12 @@ import { userSpotifyStore } from '@/stores/spotify'
 import { useCouchDBStore } from '@/stores/couchdb'
 
 
-const store = useCouchDBStore();
+const couchdb = useCouchDBStore();
+const playlist = userSpotifyStore();
 let tracks = ref([]); // Liste des morceaux
 onMounted(async () => {
   try {
-    const allTracks = await store.fetchAllDocuments(); // Attendre la résolution de la Promise
+    const allTracks = await couchdb.fetchAllDocuments(); // Attendre la résolution de la Promise
     tracks.value = allTracks; // Assigner les données une fois disponibles
     // console.log('allTracks', tracks.value);
   } catch (error) {
@@ -26,9 +27,11 @@ onMounted(async () => {
 <template>
   <main>
     <Header />
-    <PlaylistList page="Playlists Spawtify" :playlists="store.playlists"
-      @selectPlaylist="handleSelectPlaylist" key="home"/>
-
+    <PlaylistList page="Playlists Spawtify" :playlists="playlist.playlists" @selectPlaylist="handleSelectPlaylist"
+      key="home" />
+    <router-link class="registered-playlist" :to="{ name: 'getData' }">
+      <h3>Liste complète</h3>
+    </router-link>
     <div class="youtube-to-spotify">
       <router-link :to="{ name: 'videos' }">
         <div class="container flex column">
@@ -40,7 +43,7 @@ onMounted(async () => {
       </router-link>
     </div>
     <Aside />
-    <Tracklist/>
+    <Tracklist />
   </main>
 </template>
 

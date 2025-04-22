@@ -36,9 +36,12 @@ onMounted(() => {
 <template>
   <main>
     <Header />
-    <PlaylistList page="Playlist Spawtify" :playlists="store.playlists" :loading="store.loading" @selectPlaylist="handleSelectPlaylist" />
+    <PlaylistList page="Playlist Spawtify" :playlists="store.playlists" :loading="store.loading"
+      @selectPlaylist="handleSelectPlaylist" />
 
-
+    <router-link class="registered-playlist" :to="{ name: 'getData' }">
+      <h3>Liste complète</h3>
+    </router-link>
     <div class="youtube-to-spotify">
       <router-link :to="{ name: 'videos' }">
         <div class="container flex column">

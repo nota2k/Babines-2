@@ -26,6 +26,9 @@ onMounted(() => {
   <main>
     <Header />
     <PlaylistList page="Playlist Youtruffe" @selectPlaylist="handleSelectPlaylist" />
+    <router-link class="registered-playlist" :to="{ name: 'getData' }">
+      <h3>Liste complète</h3>
+    </router-link>
     <div class="youtube-to-spotify">
       <router-link :to="{ name: 'home' }">
         <div class="container flex column">
@@ -37,7 +40,7 @@ onMounted(() => {
       </router-link>
     </div>
     <Aside />
-    <PlaylistVideoList :id="selectedPlaylistId" />
+    <PlaylistVideoList/>
   </main>
 </template>
 

@@ -17,19 +17,20 @@ onMounted(() => {
   store.fetchAllDocuments()
     .then((allTracks) => {
       tracks.value = allTracks; // Assigner les données une fois disponibles
-      console.log('allTracks', tracks.value);
+      // console.log('allTracks', tracks.value);
     })
     .catch((error) => {
       console.error('Erreur lors de la récupération des morceaux :', error);
     });
 });
 
+console.log('allTracks', tracks.value);
+
 const sortTracksByArtist = (event) => {
-  tracks.value = store.tracksByPlaylist
-  tracks.value.sort((a, b) => {
-    if (a.track.artist.toLowerCase() < b.track.artist.toLowerCase())
+  allTracks.value.sort((a, b) => {
+    if (a.artist.toLowerCase() < b.artist.toLowerCase())
       return isSortedAsc.value ? -1 : 1
-    if (a.track.artist.toLowerCase() > b.track.artist.toLowerCase())
+    if (a.artist.toLowerCase() > b.artist.toLowerCase())
       return isSortedAsc.value ? 1 : -1
     return 0
   })
