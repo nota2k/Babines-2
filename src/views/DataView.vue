@@ -4,28 +4,23 @@ import Header from '@/components/Header.vue'
 import Aside from '@/components/Aside.vue'
 
 import PlaylistList from '@/components/playlists/PlaylistList.vue'
-import PlaylistTracklist from '@/components/playlists/PlaylistTracklist.vue'
+import Tracklist from '@/components/playlists/Tracklist.vue'
 import { userSpotifyStore } from '@/stores/spotify'
+import { useCouchDBStore } from '@/stores/couchdb'
 
 
-const store = userSpotifyStore();
-const selectedPlaylist = ref(null); // Playlist sélectionnée
-
-const handleSelectPlaylist = async (id) => {
-  selectedPlaylist.value = id; // Met à jour l'ID sélectionné
-  if (id) {
-    await store.fetchTracksByPlaylist(id); // Charge les morceaux de la playlist sélectionnée
-  } else {
-    store.tracksByPlaylist = store.likedTracks; // Utilise les morceaux likés par défaut
+const store = useCouchDBStore();
+let tracks = ref([]); // Liste des morceaux
+onMounted(async () => {
+  try {
+    const allTracks = await store.fetchAllDocuments(); // Attendre la résolution de la Promise
+    tracks.value = allTracks; // Assigner les données une fois disponibles
+    // console.log('allTracks', tracks.value);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des morceaux :', error);
   }
-};
-
-onMounted(() => {
-  store.fetchAllPlaylists(); // Charge toutes les playlists au montage
-  store.tracksByPlaylist = store.likedTracks; // Définit les morceaux likés par défaut
 });
 
-console.log(selectedPlaylist.value); // Affiche l'ID de la playlist sélectionnée dans la console
 </script>
 
 <template>
@@ -45,7 +40,7 @@ console.log(selectedPlaylist.value); // Affiche l'ID de la playlist sélectionn�
       </router-link>
     </div>
     <Aside />
-    <PlaylistTracklist :playlist="selectedPlaylist" />
+    <Tracklist/>
   </main>
 </template>
 

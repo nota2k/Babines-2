@@ -11,10 +11,12 @@ const addDocument = async () => {
   if (!title.value || !artist.value || !url.value) return;
 
   await db.post({
-    title: title.value,
-    artist: artist.value,
-    url: url.value,
-    created_at: new Date().toISOString()
+    track: {
+      title: title.value,
+      artist: artist.value,
+      url: url.value,
+      created_at: new Date().toISOString()
+    }
   });
 
   // Réinitialise les champs

@@ -23,11 +23,12 @@ async function loadPlaylistData(id: string) {
     // Récupère les pistes de la playlist
     const tracksData = await storeSpotify.fetchTracksByPlaylist(id);
     tracks.value = tracksData;
-
+    console.log('tracks', tracks.value);
     // Formatage des données pour apiData
     if (playlist.value && tracks.value.length > 0) {
       apiData.value = tracks.value.map((track) => ({
         artist: track.track.artist,
+        title: track.track.title,
         album: track.track.album,
         added_at: track.track.added_at,
         track_id: track.track.track_id,
@@ -90,7 +91,7 @@ function exportCurrentPlaylist() {
 
 const fetchAndInsert = async () => {
   try {
-    console.log('apiData pour insertion:', apiData.value);
+    // console.log('apiData pour insertion:', apiData.value);
 
     // Vérification des données
     if (!apiData.value || apiData.value.length === 0) {
@@ -113,6 +114,7 @@ const fetchAndInsert = async () => {
           _id: item.track_id,
           _rev: existingDoc._rev,
           track_id: item.track_id,
+          title: item.title,
           artist: item.artist,
           album: item.album,
           added_at: item.added_at,
@@ -125,6 +127,7 @@ const fetchAndInsert = async () => {
           docsToInsert.push({
             _id: item.track_id,
             track_id: item.track_id,
+            title: item.title,
             artist: item.artist,
             album: item.album,
             added_at: item.added_at,
@@ -140,7 +143,7 @@ const fetchAndInsert = async () => {
     // Insérer ou mettre à jour tous les documents en une seule opération
     if (docsToInsert.length > 0) {
       const results = await db.bulkDocs(docsToInsert);
-      console.log('Résultats des insertions en bloc:', results);
+      // console.log('Résultats des insertions en bloc:', results);
 
       // Vérifier les résultats
       const errors = results.filter(r => r.error);
