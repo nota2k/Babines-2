@@ -15,8 +15,11 @@ export const userSpotifyStore = defineStore('spotify', {
   actions: {
     async fetchAllPlaylists() {
       try {
-        this.playlists = allPlaylistsData
-        // loading = true
+        this.loading = true;
+        const response = await fetch('https://tentacules.pantagruweb.club/webhook/getplaylist');
+        const data = await response.json();
+        this.playlists = data;
+        this.loading = false;
       } catch (error) {
         console.error('Error fetching listes:', error)
       }
