@@ -30,17 +30,25 @@ export async function savePlaylistToDB(playlist) {
 
 /**
  * Sauvegarder les tracks d'une playlist dans la BDD
- * @param {string} playlistId - ID Spotify de la playlist
+ * @param {string} playlistSpotifyId - ID Spotify de la playlist (ex: "37i9dQZF1DXcBWIGoYBM5M")
  * @param {Array} tracks - Array de tracks depuis n8n
+ * @param {Object} playlistInfo - (Optionnel) Infos de la playlist pour la créer si elle n'existe pas
  */
-export async function savePlaylistTracksToDB(playlistId, tracks) {
+export async function savePlaylistTracksToDB(playlistSpotifyId, tracks, playlistInfo = null) {
   try {
-    const response = await fetch(`${API_URL}/playlists/${playlistId}/tracks`, {
+    const body = { items: tracks }
+
+    // Si on a les infos de la playlist, les inclure
+    if (playlistInfo) {
+      body.playlist_info = playlistInfo
+    }
+
+    const response = await fetch(`${API_URL}/playlists/${playlistSpotifyId}/tracks`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ items: tracks })
+      body: JSON.stringify(body)
     })
 
     if (!response.ok) {

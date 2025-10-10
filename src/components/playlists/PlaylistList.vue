@@ -24,8 +24,8 @@ const emit = defineEmits(['selectPlaylist']);
         <button class="close" @click="$emit('close')">Fermer</button>
         <h2>{{props.page}}</h2>
         <ul>
-          <router-link :to="{ name: 'playlist', params: { id: playlist.id }}" v-for="playlist in playlists" :key="playlist.id">
-            <li class="playlist-item" @click="$emit('selectPlaylist', playlist.id)">
+          <router-link :to="{ name: 'playlist', params: { id: playlist.spotify_id || playlist.id }}" v-for="playlist in playlists" :key="playlist.spotify_id || playlist.id">
+            <li class="playlist-item" @click="$emit('selectPlaylist', playlist.spotify_id || playlist.id)">
               {{ playlist.name }}
             </li>
           </router-link>

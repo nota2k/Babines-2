@@ -161,34 +161,17 @@ export const userSpotifyStore = defineStore('spotify', {
         // 2. Si aucune donnée en BDD, synchroniser depuis n8n
         console.log('🔄 Première synchronisation des tracks depuis n8n...')
 
-        // D'abord, récupérer les infos de la playlist
-        let playlistInfo = null
-        try {
-          const playlistsResponse = await fetch('https://tentacules.pantagruweb.club/webhook/getplaylist')
-          const allPlaylists = await playlistsResponse.json()
-          playlistInfo = allPlaylists.find(p => p.id === id)
-
-          // Sauvegarder les infos de la playlist si trouvées
-          if (playlistInfo) {
-            console.log(`📝 Sauvegarde des infos de la playlist "${playlistInfo.name}"`)
-            await savePlaylistToDB(playlistInfo)
-          }
-        } catch (error) {
-          console.warn('⚠️ Impossible de récupérer les infos de la playlist:', error)
-        }
-
-        // Ensuite, récupérer les tracks
+        // Récupérer les tracks
         const response = await fetch(
           `https://tentacules.pantagruweb.club/webhook/playlist?id=${id}`
         )
         const data = await response.json()
         this.tracksByPlaylist = data
-        console.log('data', data);
 
-        // 3. Sauvegarder dans MySQL avec les infos de la playlist
+        // 3. Sauvegarder dans MySQL (la playlist sera créée automatiquement si nécessaire)
         try {
           console.log('💾 Sauvegarde des tracks dans MySQL...')
-          const result = await savePlaylistTracksToDB(id, data, playlistInfo)
+          const result = await savePlaylistTracksToDB(id, data)
           console.log(`✅ ${result.saved} tracks sauvegardés`)
         } catch (error) {
           console.warn('⚠️ Erreur sauvegarde tracks:', error)
@@ -245,8 +228,8 @@ export const userSpotifyStore = defineStore('spotify', {
           )
           const tracks = await tracksResponse.json()
 
-          // Sauvegarder dans MySQL (écrase les anciens) avec les infos de la playlist
-          const result = await savePlaylistTracksToDB(playlistId, tracks, currentPlaylist)
+          // Sauvegarder dans MySQL (écrase les anciens)
+          const result = await savePlaylistTracksToDB(playlistId, tracks)
           console.log(`✅ ${result.saved} tracks mis à jour`)
 
           // Mettre à jour le snapshot_id de la playlist
@@ -285,16 +268,6 @@ export const userSpotifyStore = defineStore('spotify', {
       try {
         console.log('🔄 Synchronisation forcée des tracks depuis n8n...')
 
-        // Récupérer les infos de la playlist
-        let playlistInfo = null
-        try {
-          const playlistsResponse = await fetch('https://tentacules.pantagruweb.club/webhook/getplaylist')
-          const allPlaylists = await playlistsResponse.json()
-          playlistInfo = allPlaylists.find(p => p.id === id)
-        } catch (error) {
-          console.warn('⚠️ Impossible de récupérer les infos de la playlist:', error)
-        }
-
         // Récupérer les tracks
         const response = await fetch(
           `https://tentacules.pantagruweb.club/webhook/playlist?id=${id}`
@@ -302,9 +275,9 @@ export const userSpotifyStore = defineStore('spotify', {
         const data = await response.json()
         this.tracksByPlaylist = data
 
-        // Sauvegarder dans MySQL avec les infos de la playlist
+        // Sauvegarder dans MySQL
         console.log('💾 Sauvegarde dans MySQL...')
-        const result = await savePlaylistTracksToDB(id, data, playlistInfo)
+        const result = await savePlaylistTracksToDB(id, data)
         console.log(`✅ ${result.saved} tracks synchronisés`)
 
         return data

@@ -328,39 +328,19 @@ app.post('/api/playlists/:spotify_id/tracks', async (req, res) => {
   try {
     const { spotify_id } = req.params
     const tracks = req.body.items || req.body
-    const playlistInfo = req.body.playlist_info // Info optionnelle de la playlist
 
     // Récupérer ou créer la playlist
     let playlist = await query('SELECT id FROM playlists WHERE spotify_id = ?', [spotify_id])
     let playlistId
 
     if (playlist.length === 0) {
-      // La playlist n'existe pas, la créer
-      if (playlistInfo) {
-        console.log(`📝 Création de la playlist "${playlistInfo.name}" en BDD`)
-        const createResult = await query(
-          'INSERT INTO playlists (spotify_id, name, description, owner_display_name, image_url, spotify_url, snapshot_id, total_tracks) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          [
-            spotify_id,
-            playlistInfo.name || 'Playlist sans nom',
-            playlistInfo.description || null,
-            playlistInfo.owner?.display_name || null,
-            playlistInfo.images?.[0]?.url || null,
-            playlistInfo.external_urls?.spotify || null,
-            playlistInfo.snapshot_id || null,
-            tracks.length
-          ]
-        )
-        playlistId = createResult.insertId
-      } else {
-        // Créer une playlist minimale
-        console.log(`📝 Création d'une playlist minimale pour ${spotify_id}`)
-        const createResult = await query(
-          'INSERT INTO playlists (spotify_id, name, total_tracks) VALUES (?, ?, ?)',
-          [spotify_id, `Playlist ${spotify_id}`, tracks.length]
-        )
-        playlistId = createResult.insertId
-      }
+      // La playlist n'existe pas, la créer avec des valeurs minimales
+      console.log(`📝 Création d'une playlist pour ${spotify_id}`)
+      const createResult = await query(
+        'INSERT INTO playlists (spotify_id, name, total_tracks) VALUES (?, ?, ?)',
+        [spotify_id, `Playlist ${spotify_id.substring(0, 8)}`, tracks.length]
+      )
+      playlistId = createResult.insertId
     } else {
       playlistId = playlist[0].id
     }
