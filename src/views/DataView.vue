@@ -6,19 +6,17 @@ import Aside from '@/components/Aside.vue'
 import PlaylistList from '@/components/playlists/PlaylistList.vue'
 import Tracklist from '@/components/playlists/Tracklist.vue'
 import { userSpotifyStore } from '@/stores/spotify'
-import { useCouchDBStore } from '@/stores/couchdb'
 
-
-const couchdb = useCouchDBStore();
 const playlist = userSpotifyStore();
 let tracks = ref([]); // Liste des morceaux
+
 onMounted(async () => {
   try {
-    const allTracks = await couchdb.fetchAllDocuments(); // Attendre la résolution de la Promise
-    tracks.value = allTracks; // Assigner les données une fois disponibles
-    // console.log('allTracks', tracks.value);
+    // Charger toutes les playlists depuis MySQL (ou synchroniser depuis n8n si vide)
+    await playlist.fetchAllPlaylists()
+    // console.log('Playlists chargées:', playlist.playlists)
   } catch (error) {
-    console.error('Erreur lors de la récupération des morceaux :', error);
+    console.error('Erreur lors de la récupération des playlists :', error);
   }
 });
 

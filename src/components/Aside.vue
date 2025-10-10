@@ -23,7 +23,7 @@ async function loadPlaylistData(id: string) {
     // Récupère les pistes de la playlist
     const tracksData = await storeSpotify.fetchTracksByPlaylist(id);
     tracks.value = tracksData;
-    console.log('tracks', tracks.value);
+    // console.log('tracks', tracks.value);
     // Formatage des données pour apiData
     if (playlist.value && tracks.value.length > 0) {
       apiData.value = tracks.value.map((track) => ({
@@ -43,7 +43,7 @@ async function loadPlaylistData(id: string) {
     }
 
   } catch (error) {
-    console.error('Erreur lors du chargement des données:', error);
+    // console.error('Erreur lors du chargement des données:', error);
   }
 }
 
@@ -96,7 +96,7 @@ const fetchAndInsert = async () => {
 
     // Vérification des données
     if (!apiData.value || apiData.value.length === 0) {
-      console.error('Aucune donnée à synchroniser');
+      // console.error('Aucune donnée à synchroniser');
       return;
     }
 
@@ -136,7 +136,7 @@ const fetchAndInsert = async () => {
             last_updated: new Date().toISOString()
           });
         } else {
-          console.error(`Erreur lors de la vérification de ${item.track_id}:`, err);
+          // console.error(`Erreur lors de la vérification de ${item.track_id}:`, err);
         }
       }
     }
@@ -149,13 +149,13 @@ const fetchAndInsert = async () => {
       // Vérifier les résultats
       const errors = results.filter(r => r.error);
       if (errors.length > 0) {
-        console.error(`${errors.length} erreurs lors de l'insertion en bloc:`, errors);
+        // console.error(`${errors.length} erreurs lors de l'insertion en bloc:`, errors);
       } else {
-        console.log(`${results.length} documents insérés ou mis à jour avec succès!`);
+        // console.log(`${results.length} documents insérés ou mis à jour avec succès!`);
       }
     }
   } catch (error) {
-    console.error('Erreur lors de la synchronisation :', error);
+    // console.error('Erreur lors de la synchronisation :', error);
   }
 };
 </script>

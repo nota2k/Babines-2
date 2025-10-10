@@ -1,11 +1,11 @@
 <script setup>
 import { ref, onMounted, defineProps, onBeforeMount, onUpdated, watch } from 'vue'
-import { useCouchDBStore } from '@/stores/couchdb'
+import { userSpotifyStore } from '@/stores/spotify'
 import { useRoute } from 'vue-router'
 import AddTrackManually from './addTrackManually.vue'
 
 const route = useRoute()
-const store = useCouchDBStore();
+const store = userSpotifyStore();
 let tracks = ref([]); // Liste des morceaux
 let allTracks = ref([]); // Liste des morceaux
 let playlist = ref([])
@@ -14,15 +14,18 @@ let isSortedAsc = ref(true)
 let sortedBy = ref('')
 
 // Charger les données au montage du composant
-onMounted(() => {
-  store.fetchAllDocuments()
-    .then((allTracks) => {
-      tracks.value = allTracks; // Assigner les données une fois disponibles
-      // console.log('allTracks', tracks.value);
-    })
-    .catch((error) => {
-      console.error('Erreur lors de la récupération des morceaux :', error);
-    });
+onMounted(async () => {
+  try {
+    // Charger depuis MySQL (ou synchroniser depuis n8n si vide)
+    const playlistId = route.params.id
+    if (playlistId) {
+      const tracksList = await store.fetchTracksByPlaylist(playlistId)
+      tracks.value = tracksList
+      allTracks.value = tracksList
+    }
+  } catch (error) {
+    // console.error('Erreur lors de la récupération des morceaux :', error)
+  }
 });
 
 console.log('allTracks', tracks.value);
