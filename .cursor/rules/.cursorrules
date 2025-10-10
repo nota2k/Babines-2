@@ -1,0 +1,314 @@
+# Règles Cursor pour Vue.js 3
+
+## Principes Généraux
+
+- Toujours privilégier la Composition API avec <script setup>
+- Utiliser TypeScript ou JSDoc pour la documentation du code si nécessaire
+- Suivre le guide de style officiel Vue.js
+- Privilégier la réutilisabilité et la modularité des composants
+- Écrire du code propre, lisible et maintenable
+
+## Structure des Composants Vue
+
+### Template
+
+- Utiliser des noms de composants en PascalCase
+- Limiter la logique dans les templates (extraire dans des computed ou methods)
+- Préférer v-show pour les toggles fréquents, v-if pour les conditions permanentes
+- Utiliser des key explicites dans les v-for
+- Éviter v-if avec v-for sur le même élément
+- Utiliser des noms de props et events descriptifs en kebab-case dans les templates
+
+### Script Setup
+
+```vue
+<script setup>
+import { ref, computed, watch, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useMyStore } from '@/stores/myStore'
+
+// Props avec validation
+const props = defineProps({
+  title: {
+    type: String,
+    required: true
+  },
+  items: {
+    type: Array,
+    default: () => []
+  }
+})
+
+// Emits
+const emit = defineEmits(['update', 'delete'])
+
+// Composables et stores
+const router = useRouter()
+const route = useRoute()
+const store = useMyStore()
+
+// Reactive state
+const count = ref(0)
+
+// Computed
+const doubleCount = computed(() => count.value * 2)
+
+// Watchers
+watch(() => props.title, (newVal) => {
+  console.log('Title changed:', newVal)
+})
+
+// Lifecycle hooks
+onMounted(() => {
+  // Initialisation
+})
+
+// Methods
+function handleClick() {
+  emit('update', count.value)
+}
+</script>
+```
+
+### Style
+
+- Utiliser `<style scoped>` par défaut pour éviter les conflits
+- Utiliser des classes CSS plutôt que du style inline
+- Organiser le CSS de manière logique (layout -> typo -> couleurs)
+- Utiliser des variables CSS pour les valeurs réutilisables
+
+## Vue Router
+
+- Définir les routes de manière claire avec des noms explicites
+- Utiliser des named routes pour la navigation
+- Utiliser les navigation guards pour la protection des routes
+- Préférer `useRouter()` et `useRoute()` dans <script setup>
+- Utiliser le lazy loading pour les routes : `component: () => import('@/views/MyView.vue')`
+
+```javascript
+// Bon exemple
+router.push({ name: 'user-profile', params: { id: 123 } })
+
+// Navigation avec query
+router.push({ name: 'search', query: { q: 'vue' } })
+```
+
+## Pinia (State Management)
+
+- Créer des stores modulaires et ciblés (éviter les mega-stores)
+- Utiliser la Composition API dans les stores
+- Nommer les stores avec le préfixe "use" : `useAuthStore`, `useSpotifyStore`
+- Organiser les stores : state -> getters -> actions
+- Ne jamais muter le state directement, toujours passer par des actions
+
+```javascript
+// stores/example.js
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+
+export const useExampleStore = defineStore('example', () => {
+  // State
+  const items = ref([])
+  const loading = ref(false)
+
+  // Getters
+  const itemCount = computed(() => items.value.length)
+  
+  // Actions
+  async function fetchItems() {
+    loading.value = true
+    try {
+      // Logique de fetch
+      items.value = await api.getItems()
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { items, loading, itemCount, fetchItems }
+})
+```
+
+## Composables
+
+- Créer des composables pour la logique réutilisable
+- Nommer les composables avec le préfixe "use"
+- Placer les composables dans `/src/composables/`
+- Retourner uniquement ce qui doit être exposé
+- Documenter les paramètres et les retours
+
+```javascript
+// composables/useDebounce.js
+import { ref, watch } from 'vue'
+
+export function useDebounce(value, delay = 300) {
+  const debouncedValue = ref(value.value)
+  
+  watch(value, (newVal) => {
+    setTimeout(() => {
+      debouncedValue.value = newVal
+    }, delay)
+  })
+  
+  return debouncedValue
+}
+```
+
+## Bonnes Pratiques
+
+### Réactivité
+
+- Utiliser `ref()` pour les primitives
+- Utiliser `reactive()` pour les objets (attention aux limitations)
+- Toujours accéder aux refs avec `.value` dans <script>
+- Utiliser `toRefs()` pour déstructurer les props ou reactive objects
+- Préférer `computed()` pour les valeurs dérivées plutôt que des refs mis à jour manuellement
+
+### Performance
+
+- Utiliser `shallowRef()` et `shallowReactive()` pour les grandes structures
+- Utiliser `v-once` pour le contenu statique
+- Implémenter le lazy loading des composants lourds
+- Utiliser `<KeepAlive>` pour préserver l'état des composants
+- Éviter les computed properties lourdes, préférer la mémoisation
+
+### Gestion des Erreurs
+
+- Toujours wrapper les appels async dans des try/catch
+- Fournir un feedback utilisateur approprié (loading, errors)
+- Utiliser des error boundaries quand approprié
+- Logger les erreurs de manière structurée
+
+```javascript
+async function loadData() {
+  loading.value = true
+  error.value = null
+  try {
+    data.value = await api.fetchData()
+  } catch (e) {
+    error.value = 'Erreur lors du chargement des données'
+    console.error('Load error:', e)
+  } finally {
+    loading.value = false
+  }
+}
+```
+
+### Props et Events
+
+- Valider les props avec types et validateurs
+- Utiliser des valeurs par défaut appropriées
+- Préférer les events aux callbacks dans les props
+- Nommer les events de manière descriptive (update:modelValue, item:selected)
+- Utiliser v-model pour la liaison bidirectionnelle
+
+### Accessibilité
+
+- Utiliser des balises sémantiques HTML
+- Ajouter des attributs ARIA quand nécessaire
+- Assurer la navigation au clavier
+- Fournir des labels appropriés pour les formulaires
+- Tester avec un lecteur d'écran
+
+### Tests
+
+- Privilégier les tests unitaires pour la logique métier
+- Tester les composables indépendamment
+- Tester les interactions utilisateur importantes
+- Mocker les dépendances externes (API, stores)
+
+## Organisation du Code
+
+### Structure des Fichiers
+
+```
+src/
+├── assets/          # Images, fonts, CSS globaux
+├── components/      # Composants réutilisables
+│   ├── common/      # Composants génériques (Button, Input, etc.)
+│   └── features/    # Composants spécifiques à une fonctionnalité
+├── composables/     # Logique réutilisable
+├── router/          # Configuration Vue Router
+├── stores/          # Stores Pinia
+├── views/           # Composants de pages/vues
+├── services/        # Logique API et services externes
+├── utils/           # Fonctions utilitaires
+└── types/           # Types TypeScript (si applicable)
+```
+
+### Conventions de Nommage
+
+- Composants : PascalCase (MyComponent.vue)
+- Composables : camelCase avec préfixe "use" (useMyComposable.js)
+- Stores : camelCase avec préfixe "use" (useMyStore.js)
+- Utilitaires : camelCase (formatDate.js)
+- Constantes : UPPER_SNAKE_CASE
+- Variables et fonctions : camelCase
+
+## ESLint et Prettier
+
+- Toujours suivre les règles ESLint configurées
+- Utiliser Prettier pour le formatage automatique
+- Exécuter `npm run lint` avant chaque commit
+- Configurer les hooks pre-commit si nécessaire
+
+## Vite
+
+- Utiliser les alias de chemin (@/ pour src/)
+- Organiser les imports : Vue -> composables -> stores -> composants -> utils
+- Utiliser l'import dynamique pour le code splitting
+- Profiter du HMR (Hot Module Replacement) en développement
+
+## PouchDB/CouchDB
+
+- Centraliser la logique de base de données dans des services dédiés
+- Gérer correctement les conflits de réplication
+- Utiliser des try/catch pour toutes les opérations DB
+- Implémenter une stratégie de synchronisation claire
+- Documenter la structure des documents
+
+```javascript
+// services/db.js
+export async function saveDocument(doc) {
+  try {
+    const response = await db.put(doc)
+    return response
+  } catch (err) {
+    if (err.name === 'conflict') {
+      // Gérer les conflits
+    }
+    throw err
+  }
+}
+```
+
+## Commentaires et Documentation
+
+- Commenter le "pourquoi", pas le "quoi"
+- Documenter les composants complexes avec JSDoc
+- Ajouter des commentaires pour la logique non évidente
+- Maintenir un README.md à jour
+- Documenter les APIs et les interfaces de composants
+
+## Git
+
+- Écrire des messages de commit clairs et descriptifs
+- Utiliser des branches pour les nouvelles fonctionnalités
+- Faire des commits atomiques (une fonctionnalité = un commit)
+- Préfixes de commits : feat:, fix:, refactor:, docs:, style:, test:, chore:
+
+## Sécurité
+
+- Ne jamais exposer de secrets ou clés API dans le code
+- Utiliser les variables d'environnement pour les configurations sensibles
+- Valider et sanitizer les entrées utilisateur
+- Implémenter la protection CSRF si nécessaire
+- Garder les dépendances à jour
+
+## Spécifique au Projet Babines
+
+- Respecter la structure existante du projet
+- Utiliser les stores Spotify, YouTube et CouchDB de manière cohérente
+- Maintenir la cohérence visuelle avec les assets existants
+- Privilégier la réutilisation des composants existants (Header, Aside, etc.)
+

@@ -9,13 +9,14 @@
     "preview": "vite preview",
     "lint": "eslint . --fix",
     "format": "prettier --write src/",
-    "start": "http-server ./dist -p 5500"
+    "start": "http-server ./dist -p 5500",
+    "db:create": "mysql -u root -p < database/schema.sql",
+    "db:seed": "mysql -u root -p bane2718_babines < database/seed.sql"
   },
   "dependencies": {
     "events": "^3.3.0",
     "http-server": "^14.1.1",
     "pinia": "^3.0.1",
-    "pouchdb": "^9.0.0",
     "vue": "^3.5.13",
     "vue-router": "^4.5.0"
   },

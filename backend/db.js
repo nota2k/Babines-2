@@ -1,49 +1,40 @@
 /**
  * Service de connexion et gestion de la base de données MySQL
- *
- * ⚠️ IMPORTANT : Ce fichier est conçu pour un backend Node.js
- * MySQL ne peut PAS être utilisé directement depuis le navigateur !
- *
- * Deux options :
- * 1. Créer un backend Express/Node.js qui utilise ce service
- * 2. Utiliser votre API existante (tentacules.pantagruweb.club)
- *
- * Pour le moment, ce fichier est désactivé pour ne pas casser l'application
+ * Backend Node.js uniquement
  */
 
-// ⚠️ Ne pas importer mysql2 côté client - cela causera des erreurs
-// import mysql from 'mysql2/promise'
+import mysql from 'mysql2/promise'
+import dotenv from 'dotenv'
 
-// Configuration de la connexion (pour référence uniquement)
+dotenv.config()
+
+// Configuration de la connexion
 const dbConfig = {
-  host: import.meta.env.VITE_DB_HOST || 'localhost',
-  port: import.meta.env.VITE_DB_PORT || 3306,
-  database: import.meta.env.VITE_DB_NAME || 'bane2718_babines',
-  user: import.meta.env.VITE_DB_USER || 'bane2718_bane2718',
-  password: import.meta.env.VITE_DB_PASSWORD || '9HR3-8NfK-D7P#',
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 3306,
+  database: process.env.DB_NAME || 'bane2718_babines',
+  user: process.env.DB_USER || 'bane2718_bane2718',
+  password: process.env.DB_PASSWORD || '',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
+  queueLimit: 0
 }
 
 // Pool de connexions
 let pool = null
 
-console.warn('⚠️ Le service MySQL direct n\'est pas disponible côté client. Utilisez l\'API backend ou créez un serveur Express.')
-
 /**
  * Obtenir le pool de connexions
- * ⚠️ Désactivé côté client - utilisez un backend Node.js
  */
 export function getPool() {
-  throw new Error('MySQL ne peut pas être utilisé directement depuis le navigateur. Créez un backend API.')
+  if (!pool) {
+    pool = mysql.createPool(dbConfig)
+  }
+  return pool
 }
 
 /**
  * Exécuter une requête SQL
- * @param {string} sql - Requête SQL
- * @param {Array} params - Paramètres de la requête
- * @returns {Promise<Array>} Résultats de la requête
  */
 export async function query(sql, params = []) {
   try {
@@ -58,9 +49,6 @@ export async function query(sql, params = []) {
 
 /**
  * Insérer un enregistrement
- * @param {string} table - Nom de la table
- * @param {Object} data - Données à insérer
- * @returns {Promise<number>} ID de l'enregistrement inséré
  */
 export async function insert(table, data) {
   const keys = Object.keys(data)
@@ -80,10 +68,6 @@ export async function insert(table, data) {
 
 /**
  * Mettre à jour un enregistrement
- * @param {string} table - Nom de la table
- * @param {Object} data - Données à mettre à jour
- * @param {Object} where - Conditions WHERE
- * @returns {Promise<number>} Nombre de lignes affectées
  */
 export async function update(table, data, where) {
   const setClause = Object.keys(data)
@@ -108,9 +92,6 @@ export async function update(table, data, where) {
 
 /**
  * Supprimer un enregistrement
- * @param {string} table - Nom de la table
- * @param {Object} where - Conditions WHERE
- * @returns {Promise<number>} Nombre de lignes supprimées
  */
 export async function remove(table, where) {
   const whereClause = Object.keys(where)
@@ -131,11 +112,6 @@ export async function remove(table, where) {
 
 /**
  * Sélectionner des enregistrements
- * @param {string} table - Nom de la table
- * @param {Object} where - Conditions WHERE (optionnel)
- * @param {string} orderBy - Clause ORDER BY (optionnel)
- * @param {number} limit - Limite de résultats (optionnel)
- * @returns {Promise<Array>} Résultats
  */
 export async function select(table, where = {}, orderBy = '', limit = null) {
   let sql = `SELECT * FROM ${table}`
@@ -167,7 +143,6 @@ export async function select(table, where = {}, orderBy = '', limit = null) {
 
 /**
  * Tester la connexion à la base de données
- * @returns {Promise<boolean>} true si la connexion réussit
  */
 export async function testConnection() {
   try {
@@ -201,3 +176,4 @@ export default {
   testConnection,
   closePool
 }
+
