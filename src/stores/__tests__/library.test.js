@@ -124,6 +124,54 @@ describe('filtres', () => {
   })
 })
 
+describe('playlistsByPlatform', () => {
+  it('ne montre à chaque plateforme que ses propres playlists', () => {
+    expect(store.playlistsByPlatform).toEqual({
+      spotify: ['BAT BEAT'],
+      youtube: ['Trouvailles'],
+    })
+  })
+
+  it('fait apparaître une playlist sous les deux plateformes quand ses provenances en portent deux, sans doublon', async () => {
+    await getDb().put({
+      _id: 'track:spotify:X3cccccccccccccccccccc',
+      ...track({
+        title: 'Psycho Killer',
+        matchKey: 'talking heads::psycho killer',
+        sources: [
+          { platform: 'spotify', playlistId: 'PL_A', playlistName: 'BAT BEAT', externalId: 'X3cccccccccccccccccccc', addedAt: null, url: null, rawTitle: null },
+          { platform: 'youtube', playlistId: 'PL_A2', playlistName: 'BAT BEAT', externalId: 'Y4', addedAt: null, url: null, rawTitle: null },
+        ],
+      }),
+    })
+    await store.load()
+    expect(store.playlistsByPlatform.spotify).toEqual(['BAT BEAT'])
+    expect(store.playlistsByPlatform.youtube).toEqual(['BAT BEAT', 'Trouvailles'])
+  })
+
+  it('ignore une provenance sans playlistName sans provoquer d’erreur', async () => {
+    await getDb().put({
+      _id: 'artist:uuid-2',
+      type: 'artist',
+      name: 'Favoris',
+      matchKey: 'favoris',
+      pending: false,
+      sources: [{ platform: 'spotify', playlistId: null, playlistName: null, externalId: null, addedAt: null, url: null, rawTitle: null }],
+      note: '',
+      tags: [],
+      createdAt: '2026-01-03T00:00:00Z',
+      updatedAt: '2026-01-03T00:00:00Z',
+    })
+    await store.load()
+    expect(store.playlistsByPlatform.spotify).toEqual(['BAT BEAT'])
+  })
+
+  it('renvoie un objet vide pour une bibliothèque vide', async () => {
+    store.entries = []
+    expect(store.playlistsByPlatform).toEqual({})
+  })
+})
+
 describe('capture', () => {
   it('crée une entrée en attente à partir d’un lien', async () => {
     const doc = await store.capture('https://youtu.be/UBS4Gi1y_nc')

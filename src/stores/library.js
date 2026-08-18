@@ -71,6 +71,25 @@ export const useLibraryStore = defineStore('library', {
       return counts
     },
     platforms: (state) => uniqueSorted(state.entries.flatMap((e) => (e.sources || []).map((s) => s.platform))),
+
+    /**
+     * Playlists disponibles par plateforme, pour le sélecteur de la colonne
+     * de navigation. Une provenance sans playlistName (favoris, saisie
+     * manuelle) n'ajoute rien : elle n'a pas de playlist à proposer.
+     */
+    playlistsByPlatform(state) {
+      const byPlatform = {}
+      for (const entry of state.entries) {
+        for (const source of entry.sources || []) {
+          if (!source.playlistName || !source.platform) continue
+          const names = (byPlatform[source.platform] ||= new Set())
+          names.add(source.playlistName)
+        }
+      }
+      return Object.fromEntries(
+        Object.entries(byPlatform).map(([platform, names]) => [platform, uniqueSorted([...names])]),
+      )
+    },
     tags: (state) => uniqueSorted(state.entries.flatMap((e) => e.tags || [])),
     pendingEntries: (state) => state.entries.filter((e) => e.pending),
 
