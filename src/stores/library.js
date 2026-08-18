@@ -170,24 +170,28 @@ export const useLibraryStore = defineStore('library', {
     /** Fusion manuelle de deux entrées : rien n'est perdu, le doublon disparaît. */
     async mergeEntries(keepId, dropId, now = new Date().toISOString()) {
       const db = getDb()
-      const keep = await db.get(keepId)
-      const drop = await db.get(dropId)
 
-      const notes = [keep.note, drop.note].map((n) => (n || '').trim()).filter(Boolean)
-      const merged = {
-        ...keep,
-        title: keep.title || drop.title,
-        artist: keep.artist || drop.artist,
-        album: keep.album || drop.album,
-        sources: mergeSources(keep.sources || [], drop.sources || []),
-        tags: [...new Set([...(keep.tags || []), ...(drop.tags || [])])],
-        note: notes.join('\n'),
-        pending: keep.pending && drop.pending,
-        updatedAt: now,
-      }
+      const { saved, drop } = await this.guard('Fusion impossible', async () => {
+        const keep = await db.get(keepId)
+        const drop = await db.get(dropId)
 
-      const result = await this.guard('Fusion impossible', () => db.put(merged))
-      const saved = { ...merged, _rev: result.rev }
+        const notes = [keep.note, drop.note].map((n) => (n || '').trim()).filter(Boolean)
+        const merged = {
+          ...keep,
+          title: keep.title || drop.title,
+          artist: keep.artist || drop.artist,
+          album: keep.album || drop.album,
+          sources: mergeSources(keep.sources || [], drop.sources || []),
+          tags: [...new Set([...(keep.tags || []), ...(drop.tags || [])])],
+          note: notes.join('\n'),
+          pending: keep.pending && drop.pending,
+          updatedAt: now,
+        }
+
+        const result = await db.put(merged)
+        return { saved: { ...merged, _rev: result.rev }, drop }
+      })
+
       // La fusion est persistée : on la reflète immédiatement, quoi qu'il advienne
       // de la suppression du doublon.
       this.replaceLocal(saved)

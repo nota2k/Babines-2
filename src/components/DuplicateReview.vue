@@ -4,11 +4,15 @@ import { useLibraryStore, displayTitle } from '@/stores/library.js'
 
 const library = useLibraryStore()
 const busy = ref('')
+const feedback = ref('')
 
 async function merge(keep, drop) {
   busy.value = drop._id
+  feedback.value = ''
   try {
     await library.mergeEntries(keep._id, drop._id)
+  } catch (err) {
+    feedback.value = library.error || `Fusion impossible : ${err.message}`
   } finally {
     busy.value = ''
   }
@@ -27,6 +31,8 @@ const otherOf = (group, entry) => group.find((e) => e._id !== entry._id)
       Rapprochements suggérés par la clé de normalisation. <strong>Rien n'est fusionné automatiquement</strong> :
       un live et sa version studio se ressemblent sans être le même morceau. Vous décidez.
     </p>
+
+    <p v-if="feedback" class="feedback" role="status">{{ feedback }}</p>
 
     <p v-if="!library.duplicateGroups.length">Aucun doublon probable.</p>
 
@@ -64,4 +70,5 @@ li { padding: 0.4em 0; border-bottom: 1px solid #ddd; }
 .actions { display: flex; flex-direction: column; gap: 0.5em; margin-top: 1em; }
 button { padding: 0.6em; border: 2px solid black; background: var(--yellow); cursor: pointer; text-align: left; }
 .hint { opacity: 0.75; }
+.feedback { display: block; margin-bottom: 1em; }
 </style>
