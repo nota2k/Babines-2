@@ -10,7 +10,7 @@ import SidePastilles from '@/components/SidePastilles.vue'
 import SortBar from '@/components/SortBar.vue'
 import SyncIndicator from '@/components/SyncIndicator.vue'
 import LoginPanel from '@/components/LoginPanel.vue'
-import { currentSession, restoreSession, closeSession } from '@/services/session.js'
+import { currentSession, restoreSession } from '@/services/session.js'
 import { useLibraryStore } from '@/stores/library.js'
 import { useImportStore } from '@/stores/import.js'
 
@@ -24,17 +24,14 @@ function connecte(ouverte) {
   library.startReplication?.()
 }
 
-// Un cookie expiré côté serveur (redémarrage, secret de session tourné) ne
-// se remarque qu'à la prochaine tentative de réplication : sans ce watcher,
-// l'indicateur resterait bloqué sur « erreur d'authentification » et rien
-// ne ramènerait l'écran de connexion tout seul.
+// La session elle-même (fermeture sur 401, réouverture au retour du réseau)
+// est gérée dans main.js, qui vit pour toute la durée de l'app — cette vue,
+// elle, se démonte à chaque changement de route. Ici on ne fait que relire
+// l'état courant pour rafraîchir l'affichage : jamais le modifier.
 watch(
   () => library.syncStatus,
-  (status) => {
-    if (status === 'auth-error' && session.value) {
-      session.value = null
-      closeSession()
-    }
+  () => {
+    session.value = currentSession()
   },
 )
 

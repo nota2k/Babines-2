@@ -8,7 +8,7 @@ import router from './router'
 import { getDb, ensureIndexes, startReplication } from '@/services/db.js'
 import { migrateAll } from '@/services/migrate.js'
 import { useLibraryStore } from '@/stores/library.js'
-import { restoreSession } from '@/services/session.js'
+import { restoreSession, closeSession } from '@/services/session.js'
 
 // Petit helper d'accord : « 1 document » mais « 2 documents ».
 const pluriel = (n, singulier, plurielMot = singulier + 's') =>
@@ -48,6 +48,9 @@ async function bootstrap() {
 
   // La réplication attend une session ; le hors-ligne, lui, n'attend rien.
   // Une entrée capturée sans être connecté partira à la prochaine session.
+  // Point d'entrée unique : startReplication (services/db.js) ferme toute
+  // réplication déjà en vol avant d'en ouvrir une autre, donc rien ici n'a
+  // besoin de vérifier qu'aucune autre n'est déjà en cours.
   const repliquer = () =>
     startReplication(db, {
       url: import.meta.env.VITE_COUCHDB_URL,
@@ -57,6 +60,12 @@ async function bootstrap() {
         library.syncStatus = status
         // Les modifications arrivées d'un autre appareil sont visibles dès la fin d'un cycle.
         if (status === 'idle' && previous === 'pending') library.load()
+        // Géré ici plutôt que dans LibraryView : ce module vit pour toute la
+        // durée de l'application, alors que la vue se démonte à chaque
+        // changement de route. Un 401 reçu pendant que la vue est ailleurs
+        // ne doit pas laisser la session locale croire, à tort, qu'elle est
+        // toujours valide.
+        if (status === 'auth-error') closeSession()
       },
     })
 
@@ -64,6 +73,16 @@ async function bootstrap() {
   // Le cookie de session survit au rechargement ; sans cette vérification,
   // la réplication resterait en attente d'une reconnexion pourtant inutile.
   if (await restoreSession()) repliquer()
+
+  // Lancé hors ligne — le scénario même que la PWA est censée couvrir —
+  // restoreSession() renvoie null et rien ne retente ensuite : sans cet
+  // écouteur, un cookie pourtant valide resterait ignoré jusqu'au prochain
+  // rechargement complet de l'application.
+  window.addEventListener('online', () => {
+    restoreSession().then((restauree) => {
+      if (restauree) repliquer()
+    })
+  })
 
   // Safari purge IndexedDB après ~7 jours sans ouverture. La demande peut être
   // refusée ; ce n'est pas grave, CouchDB rapatrie les données à la réouverture.
