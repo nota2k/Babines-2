@@ -14,8 +14,6 @@ function reset() {
 
 <template>
   <div class="filters">
-    <input v-model="library.query" type="search" placeholder="Chercher un titre, un artiste, une note…" />
-
     <select v-model="library.entryType" aria-label="Type d’entrée">
       <option value="">Tout</option>
       <option value="track">Morceaux</option>
@@ -56,22 +54,28 @@ function reset() {
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5em;
+  gap: 0.6em;
   align-items: center;
   margin: 1em 0;
-}
-
-input[type='search'] {
-  flex: 1 1 260px;
-  padding: 0.6em;
-  border: 2px solid black;
+  padding: 0.8em;
+  background: var(--surface-douce);
+  border: 1px solid var(--trait);
 }
 
 select,
 button {
-  padding: 0.5em;
-  border: 2px solid black;
-  background: white;
+  padding: 0.5em 0.7em;
+  border: 1px solid var(--trait);
+  background: var(--surface);
+  color: var(--encre);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9em;
   cursor: pointer;
+  transition: background-color 0.15s linear, color 0.15s linear, border-color 0.15s linear;
+}
+
+select:hover,
+button:hover {
+  background: var(--jaune);
 }
 </style>
