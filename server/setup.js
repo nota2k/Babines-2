@@ -13,7 +13,18 @@
  * transformerait un redémarrage sans compte préalable en serveur qui se
  * verrouille lui-même, sans personne pour le déverrouiller.
  *
- * Usage : BABINES_ADMIN=<nom> BABINES_ADMIN_PASSWORD=<motdepasse> node setup.js
+ * Ce script agit sur BABINES_SERVER_URL (ou 127.0.0.1:PORT par défaut) —
+ * jamais sur un second processus local lancé pour l'occasion : sur
+ * l'hébergement, Passenger fait déjà tourner l'unique instance qui compte,
+ * contre BABINES_DATA_DIR. Un `node app.js` lancé à la main dans un shell où
+ * cette variable n'est pas définie démarrerait une seconde instance, avec
+ * une base LevelDB différente et vide ; ce script la sécuriserait avec
+ * succès sans que la vraie base, servie par Passenger, n'ait jamais reçu la
+ * moindre protection. D'où l'affichage de l'URL ci-dessous, à vérifier
+ * avant de continuer.
+ *
+ * Usage : BABINES_ADMIN=<nom> BABINES_ADMIN_PASSWORD=<motdepasse> \
+ *         BABINES_SERVER_URL=<url publique>/db node setup.js
  */
 
 const PORT = process.env.PORT || 5984
@@ -24,6 +35,11 @@ const PASSWORD = process.env.BABINES_ADMIN_PASSWORD
 // (`VITE_COUCHDB_DB || 'babines'`) : un nom codé en dur ici protégerait un
 // peu n'importe quoi, pendant que la vraie base resterait ouverte.
 const DB = process.env.BABINES_DB || 'babines'
+// _users et _replicator sont créées par express-pouchdb au démarrage. Une
+// écriture anonyme dans _replicator pourrait faire répliquer babines par le
+// serveur lui-même vers une cible arbitraire, contournant le _security posé
+// sur babines : elles ont donc besoin de la même protection.
+const SYSTEM_DBS = ['_users', '_replicator']
 
 if (!ADMIN || !PASSWORD) {
   console.error(
@@ -31,6 +47,11 @@ if (!ADMIN || !PASSWORD) {
   )
   process.exit(1)
 }
+
+// Affiché avant toute action : c'est la seule façon pour l'opérateur de
+// vérifier qu'il sécurise l'instance publique et non un processus local
+// démarré par erreur (voir le commentaire d'en-tête).
+console.log(`Cible : ${BASE_URL}`)
 
 const auth = `Basic ${Buffer.from(`${ADMIN}:${PASSWORD}`).toString('base64')}`
 
@@ -61,20 +82,21 @@ async function creerAdmin() {
   console.log('Administrateur créé (ou déjà existant).')
 }
 
-async function creerBase() {
-  const response = await fetch(`${BASE_URL}/${DB}`, {
+async function creerBase(nom) {
+  const response = await fetch(`${BASE_URL}/${nom}`, {
     method: 'PUT',
     headers: { Authorization: auth },
   })
-  // 412 : la base existe déjà, ce n'est pas un échec ici.
+  // 412 : la base existe déjà, ce n'est pas un échec ici. _users et
+  // _replicator sont dans ce cas dès le premier démarrage d'express-pouchdb.
   if (!response.ok && response.status !== 412) {
-    throw new Error(`création de la base « ${DB} » : réponse ${response.status}`)
+    throw new Error(`création de la base « ${nom} » : réponse ${response.status}`)
   }
-  console.log(`Base « ${DB} » prête.`)
+  console.log(`Base « ${nom} » prête.`)
 }
 
-async function appliquerSecurite() {
-  const response = await fetch(`${BASE_URL}/${DB}/_security`, {
+async function appliquerSecurite(nom) {
+  const response = await fetch(`${BASE_URL}/${nom}/_security`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: auth },
     body: JSON.stringify({
@@ -83,34 +105,50 @@ async function appliquerSecurite() {
     }),
   })
   if (!response.ok) {
-    throw new Error(`application de _security : réponse ${response.status}`)
+    // On ne fait pas échouer le script ici : verifier() est le juge final,
+    // par une vraie requête anonyme plutôt que par le code retour de ce PUT.
+    // Si une base système refuse durablement _security, c'est verifier()
+    // qui le révèle, avec le nom de la base en cause.
+    console.warn(
+      `Avertissement : application de _security sur « ${nom} » refusée (réponse ${response.status}).`,
+    )
+    return
   }
-  console.log('Document _security appliqué.')
+  console.log(`Document _security appliqué sur « ${nom} ».`)
 }
 
-async function verifier() {
-  const sansSession = await fetch(`${BASE_URL}/${DB}/_all_docs`)
-  const avecSession = await fetch(`${BASE_URL}/${DB}/_all_docs`, {
+async function verifier(nom) {
+  const sansSession = await fetch(`${BASE_URL}/${nom}/_all_docs`)
+  const avecSession = await fetch(`${BASE_URL}/${nom}/_all_docs`, {
     headers: { Authorization: auth },
   })
 
-  console.log(`Sans session : ${sansSession.status}`)
-  console.log(`Avec session : ${avecSession.status}`)
+  console.log(
+    `« ${nom} » — sans session : ${sansSession.status}, avec session : ${avecSession.status}`,
+  )
 
   if (sansSession.status !== 401 || avecSession.status !== 200) {
     throw new Error(
-      'la vérification a échoué : la base n’est pas correctement protégée. ' +
+      `la vérification a échoué sur « ${nom} » : cette base n’est pas correctement protégée. ` +
         'Ne pas considérer ce déploiement comme sécurisé.',
     )
   }
-  console.log('Vérification réussie : la base est protégée.')
 }
 
 async function main() {
   await creerAdmin()
-  await creerBase()
-  await appliquerSecurite()
-  await verifier()
+  for (const nom of [DB, ...SYSTEM_DBS]) {
+    await creerBase(nom)
+    await appliquerSecurite(nom)
+  }
+  for (const nom of [DB, ...SYSTEM_DBS]) {
+    await verifier(nom)
+  }
+  // Message final unique, pour ne jamais laisser croire qu'une seule base a
+  // été vérifiée quand trois l'ont été.
+  console.log(
+    `Vérification réussie : ${[DB, ...SYSTEM_DBS].map((n) => `« ${n} »`).join(', ')} sont protégées (401 anonyme, 200 authentifié).`,
+  )
 }
 
 main().catch((err) => {
