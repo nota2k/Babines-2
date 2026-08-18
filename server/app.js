@@ -20,10 +20,25 @@ const BabinesPouch = PouchDB.defaults({ prefix: `${DATA_DIR}${path.sep}` })
 
 const app = express()
 
+// Passenger, configuré avec PassengerBaseURI, transmet le préfixe de
+// l'Application URL tel quel : une requête vers /db/babines arrive à
+// l'application sous /db/babines, jamais réécrite en /babines. Sans monter
+// l'app sur ce même préfixe, chaque route répond 404 (vérifié en production :
+// changer le montage pour /db a transformé tous les 404 en 200). '/' reste le
+// défaut pour que le développement local continue de fonctionner via le proxy
+// Vite, qui lui *retire* /db avant de transmettre la requête.
+const BASE_PATH = process.env.BABINES_BASE_PATH || '/'
+
+// Fauxton est une console d'administration ouverte à quiconque atteint
+// l'URL : aucun intérêt à la publier sur le domaine de l'utilisateur. Doit
+// être déclaré avant express-pouchdb, et sous le même préfixe que lui pour
+// intercepter la route avant qu'elle n'atteigne le module.
+app.use(`${BASE_PATH === '/' ? '' : BASE_PATH}/_utils`, (_req, res) => res.sendStatus(404))
+
 // express-pouchdb persiste sa configuration — dont l'administrateur — dans ce
 // fichier. Le placer avec les donnees le garde hors du depot.
 app.use(
-  '/',
+  BASE_PATH,
   expressPouchDB(BabinesPouch, {
     configPath: path.join(DATA_DIR, 'config.json'),
   }),
