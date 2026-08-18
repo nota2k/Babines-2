@@ -151,6 +151,22 @@ describe('mergeEntries', () => {
   })
 })
 
+describe('mergeEntries — reprise', () => {
+  it('ne duplique pas la note quand une fusion est reproposée après l’échec de la suppression du doublon', async () => {
+    await store.updateEntry('track:youtube:Y2', { note: 'version clip' })
+    const db = getDb()
+    db.remove = async () => { throw new Error('suppression refusée') }
+
+    // Première tentative : la fusion est écrite, mais la suppression du doublon échoue.
+    await store.mergeEntries('track:spotify:X1aaaaaaaaaaaaaaaaaaaa', 'track:youtube:Y2')
+    // Le doublon survit, donc la fusion peut être reproposée.
+    await store.mergeEntries('track:spotify:X1aaaaaaaaaaaaaaaaaaaa', 'track:youtube:Y2')
+
+    const kept = store.entries.find((e) => e._id === 'track:spotify:X1aaaaaaaaaaaaaaaaaaaa')
+    expect(kept.note).toBe('version clip')
+  })
+})
+
 describe('remontée des erreurs — rien ne doit échouer en silence', () => {
   it('renseigne l’erreur et relance quand l’écriture d’une modification échoue', async () => {
     const db = getDb()

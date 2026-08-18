@@ -175,7 +175,12 @@ export const useLibraryStore = defineStore('library', {
         const keep = await db.get(keepId)
         const drop = await db.get(dropId)
 
-        const notes = [keep.note, drop.note].map((n) => (n || '').trim()).filter(Boolean)
+        const notes = [keep.note, drop.note]
+          .map((n) => (n || '').trim())
+          .filter(Boolean)
+        // Une fusion peut être reprise si la suppression du doublon a échoué :
+        // sans dédoublonnage, la note déjà absorbée serait réécrite à chaque essai.
+        const noteFusionnee = [...new Set(notes)].join('\n')
         const merged = {
           ...keep,
           title: keep.title || drop.title,
@@ -183,7 +188,7 @@ export const useLibraryStore = defineStore('library', {
           album: keep.album || drop.album,
           sources: mergeSources(keep.sources || [], drop.sources || []),
           tags: [...new Set([...(keep.tags || []), ...(drop.tags || [])])],
-          note: notes.join('\n'),
+          note: noteFusionnee,
           pending: keep.pending && drop.pending,
           updatedAt: now,
         }
