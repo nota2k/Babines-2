@@ -65,7 +65,8 @@ async function fetchJson(url) {
  * ferait mentir le rapport d'import, ce que ce store existe précisément pour éviter.
  */
 async function writeTracks(rawTracks, source, now = new Date().toISOString()) {
-  if (!rawTracks.length) return { written: 0, failed: [] }
+  const received = rawTracks.length
+  if (!received) return { written: 0, failed: [], received: 0 }
   const db = getDb()
   const adapt = ADAPTERS[source.platform].track
   const incoming = rawTracks.map((raw) => toTrackDoc(adapt(raw), source, now))
@@ -83,16 +84,17 @@ async function writeTracks(rawTracks, source, now = new Date().toISOString()) {
     if (merged !== byId.get(doc._id)) toWrite.set(doc._id, merged)
   }
 
-  if (toWrite.size === 0) return { written: 0, failed: [] }
+  if (toWrite.size === 0) return { written: 0, failed: [], received }
 
   const results = await db.bulkDocs([...toWrite.values()])
   return {
     written: results.filter((r) => r.ok).length,
     failed: results.filter((r) => r.error).map((r) => ({ id: r.id, reason: r.message || r.name })),
+    received,
   }
 }
 
-/** Récupère et écrit les morceaux d'une playlist (ou des favoris). Renvoie { written, failed }. */
+/** Récupère et écrit les morceaux d'une playlist (ou des favoris). Renvoie { written, failed, received }. */
 async function importPlaylistTracks(platform, { playlistId = null, playlistName = null, liked = false } = {}) {
   const endpoints = ENDPOINTS[platform]
   const url = liked ? endpoints.liked() : endpoints.tracks(playlistId)
@@ -119,6 +121,7 @@ export const useImportStore = defineStore('import', {
         status: 'running',
         message: '',
         httpStatus: null,
+        truncated: [],
       }
       this.jobs.push(job)
       this.running = true
@@ -136,8 +139,7 @@ export const useImportStore = defineStore('import', {
     },
 
     async importPlaylist(platform, opts = {}) {
-      const { written } = await importPlaylistTracks(platform, opts)
-      return written
+      return importPlaylistTracks(platform, opts)
     },
 
     /** Importe toutes les playlists d'une plateforme, plus les favoris si la plateforme en expose. */
@@ -150,6 +152,7 @@ export const useImportStore = defineStore('import', {
       }
 
       const failures = []
+      const truncated = []
       let imported = 0
       let writeFailures = 0
 
@@ -169,6 +172,20 @@ export const useImportStore = defineStore('import', {
           })
           imported += result.written
           writeFailures += result.failed.length
+
+          // La playlist annonce son total au moment de la liste (trackCount) ; on le
+          // compare à ce qu'on a réellement reçu de n8n. La limite qui tronque n'est
+          // pas ici : elle est dans le workflow n8n (ex. « limit: 20 » sur
+          // SPOTIFY_Babines/playlistTracks). On ne fait que la rendre visible.
+          // - trackCount absent (null/undefined) : rien à comparer, on ne signale rien.
+          // - reçu >= annoncé : pas une troncature (l'annoncé peut être périmé).
+          if (typeof playlist.trackCount === 'number' && result.received < playlist.trackCount) {
+            truncated.push({
+              playlistName: playlist.name,
+              received: result.received,
+              announced: playlist.trackCount,
+            })
+          }
         } catch (err) {
           failures.push(`${playlist.name} (${err.status})`)
         }
@@ -189,11 +206,19 @@ export const useImportStore = defineStore('import', {
       const notes = []
       if (failures.length) notes.push(`échec sur : ${failures.join(', ')}`)
       if (writeFailures) notes.push(`${pluriel(writeFailures, 'échec', 'échecs')} d'écriture en base`)
+      if (truncated.length) {
+        notes.push(
+          truncated
+            .map((t) => `${t.playlistName} : ${t.received} ${pluriel(t.received, 'morceau', 'morceaux')} reçu${t.received > 1 ? 's' : ''} sur ${t.announced} annoncé${t.announced > 1 ? 's' : ''} — la source tronque, vérifiez la limite du workflow n8n`)
+            .join(' ; '),
+        )
+      }
 
       const importedLabel = pluriel(imported, 'morceau importé', 'morceaux importés')
       this.finishJob(job, {
         imported,
         failed: failures.length + writeFailures,
+        truncated,
         status: notes.length ? 'partial' : 'ok',
         message: notes.length ? `${importedLabel}, ${notes.join(', ')}` : importedLabel,
       })

@@ -176,6 +176,83 @@ describe('erreurs — jamais de liste vide silencieuse', () => {
   })
 })
 
+describe('détection des imports tronqués — la source ment, le job ne doit pas mentir avec elle', () => {
+  it('signale une playlist dont la source annonce plus de morceaux qu’elle n’en renvoie', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      if (url.includes('/getplaylist')) return jsonResponse([{ ...SPOTIFY_PLAYLISTS[0], tracks: { total: 60 } }])
+      return jsonResponse(SPOTIFY_TRACKS) // seulement 2 morceaux reçus
+    }))
+    const store = useImportStore()
+    await store.importPlatform('spotify')
+
+    const job = store.jobs.at(-1)
+    expect(job.truncated).toEqual([{ playlistName: 'BAT BEAT', received: 2, announced: 60 }])
+    expect(job.status).toBe('partial')
+    expect(job.message).toMatch(/BAT BEAT/)
+    expect(job.message).toMatch(/2/)
+    expect(job.message).toMatch(/60/)
+  })
+
+  it('ne signale rien quand le nombre reçu correspond à l’annoncé', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      if (url.includes('/getplaylist')) return jsonResponse([{ ...SPOTIFY_PLAYLISTS[0], tracks: { total: 2 } }])
+      return jsonResponse(SPOTIFY_TRACKS)
+    }))
+    const store = useImportStore()
+    await store.importPlatform('spotify')
+
+    const job = store.jobs.at(-1)
+    expect(job.truncated).toEqual([])
+    expect(job.status).toBe('ok')
+  })
+
+  it('ne signale rien quand la playlist n’annonce aucun total', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      if (url.includes('/getplaylist')) return jsonResponse([{ ...SPOTIFY_PLAYLISTS[0], tracks: { total: null } }])
+      return jsonResponse(SPOTIFY_TRACKS)
+    }))
+    const store = useImportStore()
+    await store.importPlatform('spotify')
+
+    const job = store.jobs.at(-1)
+    expect(job.truncated).toEqual([])
+    expect(job.status).toBe('ok')
+  })
+
+  it('ne signale rien quand on reçoit plus que l’annoncé', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      if (url.includes('/getplaylist')) return jsonResponse([{ ...SPOTIFY_PLAYLISTS[0], tracks: { total: 1 } }])
+      return jsonResponse(SPOTIFY_TRACKS) // 2 reçus, 1 annoncé
+    }))
+    const store = useImportStore()
+    await store.importPlatform('spotify')
+
+    const job = store.jobs.at(-1)
+    expect(job.truncated).toEqual([])
+  })
+
+  it('porte à la fois une troncature et un échec réseau dans le même message', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      if (url.includes('/getplaylist')) {
+        return jsonResponse([
+          { ...SPOTIFY_PLAYLISTS[0], tracks: { total: 60 } },
+          { id: 'PL_KO', name: 'CASSÉE', tracks: { total: 3 } },
+        ])
+      }
+      if (url.includes('PL_KO')) return errorResponse(502)
+      return jsonResponse(SPOTIFY_TRACKS) // 2 reçus sur 60 annoncés pour BAT BEAT
+    }))
+    const store = useImportStore()
+    await store.importPlatform('spotify')
+
+    const job = store.jobs.at(-1)
+    expect(job.truncated).toEqual([{ playlistName: 'BAT BEAT', received: 2, announced: 60 }])
+    expect(job.status).toBe('partial')
+    expect(job.message).toMatch(/CASSÉE/)
+    expect(job.message).toMatch(/BAT BEAT/)
+  })
+})
+
 describe('resolvePending', () => {
   it('enrichit les entrées capturées hors ligne', async () => {
     const db = getDb()
@@ -219,7 +296,7 @@ describe('écritures vérifiées — le compteur ne doit pas mentir', () => {
       return results.map((r, i) => (i === 0 ? { id: docs[0]._id, error: true, name: 'conflict', message: 'simulé' } : r))
     }
 
-    const written = await useImportStore().importPlaylist('spotify', { playlistId: 'PL_A', playlistName: 'BAT BEAT' })
+    const { written } = await useImportStore().importPlaylist('spotify', { playlistId: 'PL_A', playlistName: 'BAT BEAT' })
     expect(written).toBe(1)
   })
 
@@ -243,7 +320,7 @@ describe('écritures vérifiées — le compteur ne doit pas mentir', () => {
     const doubled = [SPOTIFY_TRACKS[0], SPOTIFY_TRACKS[0]]
     vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(doubled)))
 
-    const written = await useImportStore().importPlaylist('spotify', { playlistId: 'PL_A', playlistName: 'BAT BEAT' })
+    const { written } = await useImportStore().importPlaylist('spotify', { playlistId: 'PL_A', playlistName: 'BAT BEAT' })
 
     // Un seul document, une seule écriture, aucun conflit.
     expect(written).toBe(1)
