@@ -1,0 +1,178 @@
+{
+  "name": "SPOTIFY_Babines/getUserPlaylists",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "playlist",
+        "operation": "getUserPlaylists",
+        "returnAll": true
+      },
+      "id": "34372d6b-4de7-4750-ba60-a6f4f3e1c89a",
+      "name": "Spotify2",
+      "type": "n8n-nodes-base.spotify",
+      "typeVersion": 1,
+      "position": [
+        820,
+        460
+      ],
+      "credentials": {
+        "spotifyOAuth2Api": {
+          "id": "fOYFQF02KgLXOIeE",
+          "name": "Spotify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "97777e3c-ce72-409f-b4d6-bfd4527e4c4b",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1380,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5ecafdf3-f1f2-4190-8a93-85d15bc783ae",
+              "name": "name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "a53e4748-886a-4489-b5b9-1018ec97cdfc",
+              "name": "description",
+              "value": "={{ $json.description }}",
+              "type": "string"
+            },
+            {
+              "id": "e63f3493-1a17-43af-ae11-11712ec1d4f8",
+              "name": "tracks",
+              "value": "={{ $json.tracks }}",
+              "type": "object"
+            },
+            {
+              "id": "b54f2010-c8c6-44e8-831e-a6bba13535d8",
+              "name": "uri",
+              "value": "={{ $json.uri }}",
+              "type": "string"
+            },
+            {
+              "id": "8ca3e9fb-d4d8-46e8-8796-303351622890",
+              "name": "id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "65f4f4c2-7554-4068-9926-a53a44fba354",
+              "name": "href",
+              "value": "={{ $json.href }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": "=",
+        "options": {}
+      },
+      "id": "9f89dd5d-e9ba-4bd3-b09a-06b0a7f9da57",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1060,
+        460
+      ],
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "path": "getplaylist",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "e515a13a-3992-4294-8c03-c064fed147d5",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        460,
+        460
+      ],
+      "webhookId": "b469b78f-40ba-437a-937d-48ba00985774"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Spotify2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Spotify2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "ead145fa-cf3e-494f-a71e-d7f03b31ea70",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "481c988b261a051a851b527d4445759b31890c2609461a4eb7afbb13f46709ee"
+  },
+  "id": "RmFoDKlRN9YgwWbC",
+  "tags": [
+    {
+      "createdAt": "2025-12-18T06:15:08.263Z",
+      "updatedAt": "2025-12-18T06:15:08.263Z",
+      "id": "0JZNlMR2T6nkrqJS",
+      "name": "Babines"
+    }
+  ]
+}

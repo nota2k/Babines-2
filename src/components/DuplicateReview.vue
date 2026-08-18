@@ -1,0 +1,82 @@
+<script setup>
+import { ref } from 'vue'
+import { useLibraryStore, displayTitle } from '@/stores/library.js'
+
+const library = useLibraryStore()
+const busy = ref('')
+const feedback = ref('')
+
+async function merge(keep, drop) {
+  busy.value = drop._id
+  feedback.value = ''
+  try {
+    await library.mergeEntries(keep._id, drop._id)
+  } catch (err) {
+    feedback.value = library.error || `Fusion impossible : ${err.message}`
+  } finally {
+    busy.value = ''
+  }
+}
+
+const platformsOf = (entry) => [...new Set((entry.sources || []).map((s) => s.platform))].join(', ')
+
+/** L'entrée qui sera absorbée si l'on garde `entry` : la première autre du groupe. */
+const otherOf = (group, entry) => group.find((e) => e._id !== entry._id)
+</script>
+
+<template>
+  <section class="duplicates">
+    <h2>Doublons probables</h2>
+    <p class="hint">
+      Rapprochements suggérés par la clé de normalisation. <strong>Rien n'est fusionné automatiquement</strong> :
+      un live et sa version studio se ressemblent sans être le même morceau. Vous décidez.
+    </p>
+
+    <p v-if="feedback" class="feedback" role="status">{{ feedback }}</p>
+
+    <p v-if="!library.duplicateGroups.length">Aucun doublon probable.</p>
+
+    <div v-for="group in library.duplicateGroups" :key="`${group[0].type}:${group[0].matchKey}`" class="group">
+      <h3>{{ group[0].matchKey }}</h3>
+      <ul>
+        <li v-for="entry in group" :key="entry._id">
+          <router-link :to="{ name: 'entry', params: { id: entry._id } }">{{ displayTitle(entry) }}</router-link>
+          <span class="meta">{{ entry.artist }} — {{ platformsOf(entry) || 'sans provenance' }}</span>
+          <span v-if="entry.note" class="meta">note : {{ entry.note.slice(0, 60) }}</span>
+        </li>
+      </ul>
+      <div class="actions">
+        <button
+          v-for="entry in group"
+          :key="`keep-${entry._id}`"
+          type="button"
+          :disabled="busy !== ''"
+          @click="merge(entry, otherOf(group, entry))"
+        >
+          Garder « {{ displayTitle(entry) }} » et y fusionner « {{ displayTitle(otherOf(group, entry)) }} »
+        </button>
+      </div>
+    </div>
+  </section>
+</template>
+
+<style scoped>
+.duplicates { max-width: 800px; margin: 0 auto; }
+.group { border: 1px solid var(--trait); background: var(--surface); padding: 1em; margin-bottom: 1em; }
+.group h3 { margin-top: 0; font-family: 'DM Mono', monospace; font-size: 0.9em; color: var(--encre-douce); }
+ul { list-style: none; padding: 0; }
+li { padding: 0.4em 0; border-bottom: 1px solid var(--trait-fin); }
+.meta { display: block; font-size: 0.85em; color: var(--encre-douce); }
+.actions { display: flex; flex-direction: column; gap: 0.5em; margin-top: 1em; }
+button {
+  padding: 0.6em;
+  border: 1px solid var(--trait);
+  background: var(--jaune);
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s linear;
+}
+.hint { color: var(--encre-douce); }
+.feedback { display: block; margin-bottom: 1em; }
+</style>

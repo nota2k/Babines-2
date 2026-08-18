@@ -1,0 +1,60 @@
+<script setup>
+import { useLibraryStore } from '@/stores/library.js'
+
+const library = useLibraryStore()
+
+function reset() {
+  library.query = ''
+  library.platform = ''
+  library.playlist = ''
+  library.tag = ''
+  library.entryType = ''
+}
+</script>
+
+<template>
+  <div class="filters">
+    <select v-model="library.entryType" aria-label="Type d’entrée">
+      <option value="">Tout</option>
+      <option value="track">Morceaux</option>
+      <option value="artist">Artistes</option>
+    </select>
+
+    <select v-model="library.tag" aria-label="Tag">
+      <option value="">Tous les tags</option>
+      <option v-for="tag in library.tags" :key="tag" :value="tag">{{ tag }}</option>
+    </select>
+
+    <button type="button" @click="reset">Réinitialiser</button>
+  </div>
+</template>
+
+<style scoped>
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+  align-items: center;
+  margin: 1em 0;
+  padding: 0.8em;
+  background: var(--surface-douce);
+  border: 1px solid var(--trait);
+}
+
+select,
+button {
+  padding: 0.5em 0.7em;
+  border: 1px solid var(--trait);
+  background: var(--surface);
+  color: var(--encre);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: background-color 0.15s linear, color 0.15s linear, border-color 0.15s linear;
+}
+
+select:hover,
+button:hover {
+  background: var(--jaune);
+}
+</style>

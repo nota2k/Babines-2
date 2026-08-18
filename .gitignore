@@ -28,3 +28,10 @@ coverage
 *.sw?
 
 *.tsbuildinfo
+
+.superpowers/
+.env
+
+# Bases PouchDB/LevelDB créées si getDb() s'exécute sous Node
+/babines/
+*.pouch

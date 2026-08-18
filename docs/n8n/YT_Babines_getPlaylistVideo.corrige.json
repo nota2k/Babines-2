@@ -1,0 +1,183 @@
+{
+  "name": "YT_Babines/getPlaylistVideo",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "playlistItem",
+        "operation": "getAll",
+        "playlistId": "={{ $json.query.playlistId }}",
+        "part": [
+          "snippet",
+          "contentDetails",
+          "id"
+        ],
+        "returnAll": true,
+        "options": {}
+      },
+      "id": "ede5848c-fc12-47da-a9cf-3a01c7893e13",
+      "name": "YouTube",
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        680,
+        460
+      ],
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "zKORva5rPd0f4EJw",
+          "name": "nelly.babillon@gmail.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "access-control-allow-origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "69fc5768-151c-4929-abb7-b76b4acdec0c",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1160,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fd94ca6c-3915-4e75-8024-8473cceeb94f",
+              "name": "playlistId",
+              "value": "={{ $json.snippet?.playlistId ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "01e26f8e-e808-450d-86f4-7c718e38e29e",
+              "name": "videoId",
+              "value": "={{ $json.contentDetails?.videoId ?? $json.snippet?.resourceId?.videoId ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "7c1003cf-d58c-43fa-bf12-61561274baa3",
+              "name": "title",
+              "value": "={{ $json.snippet?.title ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "ba249b43-4c25-4405-884e-bd58a743cf27",
+              "name": "description",
+              "value": "={{ $json.snippet?.description ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "41f4b263-c601-47c7-a871-70ff1c157df3",
+              "name": "thumbnail_url",
+              "value": "={{ $json.snippet?.thumbnails?.default?.url ?? '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e2e04655-1e2f-4496-a1ed-eb873f009645",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        900,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "path": "youtube/items",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*",
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "aee0556a-b3b5-4d51-9618-5de6c07718c7",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        460,
+        460
+      ],
+      "webhookId": "b8228b87-626b-4871-b7ae-d5b5ef175222"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "YouTube": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "41cee914-c1d8-44ce-b44b-311c3ad375c7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "481c988b261a051a851b527d4445759b31890c2609461a4eb7afbb13f46709ee"
+  },
+  "id": "fIvuJJL2cWk32Gcj",
+  "tags": [
+    {
+      "createdAt": "2025-12-18T06:15:08.263Z",
+      "updatedAt": "2025-12-18T06:15:08.263Z",
+      "id": "0JZNlMR2T6nkrqJS",
+      "name": "Babines"
+    }
+  ]
+}

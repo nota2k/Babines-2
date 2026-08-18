@@ -25,4 +25,10 @@ export default [
   js.configs.recommended,
   ...pluginVue.configs['flat/essential'],
   skipFormatting,
+
+  {
+    rules: {
+      'no-unused-vars': ['error', { ignoreRestSiblings: true }],
+    },
+  },
 ]

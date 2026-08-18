@@ -1,0 +1,146 @@
+{
+  "name": "SPOTIFY/LikedTracks",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "library"
+      },
+      "id": "2640d35b-80d0-4599-a8b4-eeb935d88b36",
+      "name": "Spotify",
+      "type": "n8n-nodes-base.spotify",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        380
+      ],
+      "credentials": {
+        "spotifyOAuth2Api": {
+          "id": "fOYFQF02KgLXOIeE",
+          "name": "Spotify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6ebc374d-71ae-4b56-a044-e40544d296cd",
+              "name": "track.artist",
+              "value": "={{ $json.track.album.artists[0].name }}",
+              "type": "string"
+            },
+            {
+              "id": "310be4a4-0739-4a86-b7c9-93611812f164",
+              "name": "track.title",
+              "value": "={{ $json.track.name }}",
+              "type": "string"
+            },
+            {
+              "id": "fe6a7fc1-7e41-492b-a7f8-561a57fe1be3",
+              "name": "track.added_at",
+              "value": "={{ $json.added_at }}",
+              "type": "string"
+            },
+            {
+              "id": "0306cbea-fff4-4894-b27d-d107a30a51cb",
+              "name": "track.album",
+              "value": "={{ $json.track.album.name }}",
+              "type": "string"
+            },
+            {
+              "id": "99160396-da61-4add-8f4e-3963df871845",
+              "name": "track.track_id",
+              "value": "={{ $json.track.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": "=",
+        "options": {}
+      },
+      "id": "8f44a515-d09f-4748-99b7-785617a7e167",
+      "name": "Edit Fields1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1320,
+        380
+      ],
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "path": "0bca488a-2f54-4e86-8afb-4464ce26088f",
+        "options": {}
+      },
+      "id": "d8521e87-831b-443d-843d-eca645f99868",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        880,
+        380
+      ],
+      "webhookId": "0bca488a-2f54-4e86-8afb-4464ce26088f"
+    },
+    {
+      "parameters": {
+        "path": "726b3250-92c7-4d30-90ee-56c0018d6b5c",
+        "options": {}
+      },
+      "id": "c7fb755b-1510-485d-9d40-6fdd65a6aca6",
+      "name": "Webhook1",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        380
+      ],
+      "webhookId": "726b3250-92c7-4d30-90ee-56c0018d6b5c"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Spotify": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Spotify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ddfe0a30-bd9d-4277-aa65-124d0a251418",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "481c988b261a051a851b527d4445759b31890c2609461a4eb7afbb13f46709ee"
+  },
+  "id": "EQukJfDkzcgJUMqr",
+  "tags": [
+    {
+      "createdAt": "2025-12-18T06:15:08.263Z",
+      "updatedAt": "2025-12-18T06:15:08.263Z",
+      "id": "0JZNlMR2T6nkrqJS",
+      "name": "Babines"
+    }
+  ]
+}
