@@ -83,7 +83,7 @@ describe('migrateAll', () => {
 
   it('réécrit tous les documents et supprime les anciens', async () => {
     const report = await migrateAll(db, NOW)
-    expect(report).toEqual({ migrated: 2, deleted: 2, skipped: 0 })
+    expect(report).toEqual({ migrated: 2, deleted: 2, skipped: 0, ignored: 0, failed: [] })
 
     const all = await db.allDocs({ include_docs: true })
     const ids = all.rows.map((r) => r.id).sort()
@@ -93,7 +93,7 @@ describe('migrateAll', () => {
   it('est rejouable : une seconde exécution ne fait rien', async () => {
     await migrateAll(db, NOW)
     const report = await migrateAll(db, NOW)
-    expect(report).toEqual({ migrated: 0, deleted: 0, skipped: 2 })
+    expect(report).toEqual({ migrated: 0, deleted: 0, skipped: 2, ignored: 0, failed: [] })
   })
 
   it('fusionne deux anciens documents visant le même identifiant', async () => {
@@ -108,5 +108,51 @@ describe('migrateAll', () => {
     await migrateAll(other, NOW)
     const doc = await other.get('track:spotify:2VNfJpwdEQBLyXajaa6LWT')
     expect(doc.sources).toHaveLength(2)
+  })
+})
+
+describe('migrateAll — sûreté des données', () => {
+  let counter = 1000
+
+  it('NE SUPPRIME PAS l’original quand l’écriture de son remplaçant échoue', async () => {
+    const db = createDb(`migrate-fail-${counter++}`, { adapter: 'memory' })
+    await db.put({ ...legacyFlat, _rev: undefined })
+
+    // Première volée (les écritures) : on simule un échec total, comme le ferait
+    // un conflit de révision ou un quota atteint. La seconde volée passe.
+    const realBulkDocs = db.bulkDocs.bind(db)
+    let call = 0
+    db.bulkDocs = async (docs) => {
+      call += 1
+      if (call === 1) return docs.map((d) => ({ id: d._id, error: true, name: 'conflict', message: 'échec simulé' }))
+      return realBulkDocs(docs)
+    }
+
+    const report = await migrateAll(db, NOW)
+
+    // L'original est toujours là : rien n'est perdu, la migration est rejouable.
+    await expect(db.get('2VNfJpwdEQBLyXajaa6LWT')).resolves.toBeTruthy()
+    expect(report.deleted).toBe(0)
+    expect(report.migrated).toBe(0)
+    expect(report.failed).toHaveLength(1)
+    expect(report.failed[0]).toMatchObject({ id: 'track:spotify:2VNfJpwdEQBLyXajaa6LWT', stage: 'write' })
+  })
+
+  it('rapporte un succès sans échec dans le cas nominal', async () => {
+    const db = createDb(`migrate-ok-${counter++}`, { adapter: 'memory' })
+    await db.put({ ...legacyFlat, _rev: undefined })
+    const report = await migrateAll(db, NOW)
+    expect(report).toEqual({ migrated: 1, deleted: 1, skipped: 0, ignored: 0, failed: [] })
+  })
+
+  it('compte les documents inclassables sans les supprimer', async () => {
+    const db = createDb(`migrate-odd-${counter++}`, { adapter: 'memory' })
+    await db.put({ ...legacyFlat, _rev: undefined })
+    await db.put({ _id: 'bizarre', quelque: 'chose' })
+
+    const report = await migrateAll(db, NOW)
+
+    expect(report.ignored).toBe(1)
+    await expect(db.get('bizarre')).resolves.toBeTruthy()
   })
 })
