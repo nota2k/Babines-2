@@ -1,0 +1,102 @@
+{
+  "name": "YT_Babines/getLikedVideos",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "playlist",
+        "returnAll": true,
+        "filters": {},
+        "options": {}
+      },
+      "id": "29d2ea6b-3ea8-4766-a6ed-dfe56e7e9518",
+      "name": "YouTube",
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        360
+      ],
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "zKORva5rPd0f4EJw",
+          "name": "nelly.babillon@gmail.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "getyoutubeplaylists",
+        "options": {}
+      },
+      "id": "8eba0473-cffc-46ef-a6f0-3785e0e4505d",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        820,
+        360
+      ],
+      "webhookId": "f9957a15-789b-454d-91df-266623467ef0"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "filters": {
+          "channelId": ""
+        },
+        "options": {}
+      },
+      "id": "02991bcf-470c-4042-8f01-4d05528df837",
+      "name": "YouTube1",
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        1260,
+        360
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube": {
+      "main": [
+        [
+          {
+            "node": "YouTube1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "550a3488-cac3-4abd-9803-daa64d0b1a80",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "481c988b261a051a851b527d4445759b31890c2609461a4eb7afbb13f46709ee"
+  },
+  "id": "NCgwqftjNX6e9dCA",
+  "tags": [
+    {
+      "createdAt": "2025-12-18T06:15:08.263Z",
+      "updatedAt": "2025-12-18T06:15:08.263Z",
+      "id": "0JZNlMR2T6nkrqJS",
+      "name": "Babines"
+    }
+  ]
+}
