@@ -6,6 +6,7 @@ import {
   ensureIndexes,
   classifyReplicationError,
   startReplication,
+  resolveRemoteUrl,
 } from '@/services/db.js'
 
 PouchDB.plugin(memoryAdapter)
@@ -29,7 +30,12 @@ describe('ensureIndexes', () => {
 
   it('rend db.find() utilisable — ce qui n’était pas le cas avant', async () => {
     await ensureIndexes(db)
-    await db.put({ _id: 'track:spotify:X1', type: 'track', artist: 'Talking Heads', matchKey: 'a::b' })
+    await db.put({
+      _id: 'track:spotify:X1',
+      type: 'track',
+      artist: 'Talking Heads',
+      matchKey: 'a::b',
+    })
     const result = await db.find({ selector: { type: 'track' } })
     expect(result.docs).toHaveLength(1)
   })
@@ -49,7 +55,9 @@ describe('classifyReplicationError', () => {
   it('reconnaît une absence de réseau', () => {
     expect(classifyReplicationError({ status: 0 }, false)).toBe('offline')
     expect(classifyReplicationError({ message: 'Failed to fetch' }, false)).toBe('offline')
-    expect(classifyReplicationError({ name: 'TypeError', message: 'NetworkError' }, false)).toBe('offline')
+    expect(classifyReplicationError({ name: 'TypeError', message: 'NetworkError' }, false)).toBe(
+      'offline',
+    )
   })
 
   it('range le reste dans « erreur »', () => {
@@ -74,8 +82,37 @@ describe('classifyReplicationError', () => {
 describe('startReplication', () => {
   it('ne réplique pas et signale « local-only » quand aucune URL n’est configurée', () => {
     const statuses = []
-    const handler = startReplication(db, { url: '', dbName: 'babines', onStatus: (s) => statuses.push(s) })
+    const handler = startReplication(db, {
+      url: '',
+      dbName: 'babines',
+      onStatus: (s) => statuses.push(s),
+    })
     expect(handler).toBeNull()
     expect(statuses).toEqual(['local-only'])
+  })
+})
+describe('resolveRemoteUrl', () => {
+  const ORIGINE = 'https://babines.test'
+
+  it('rend absolue une URL relative, en la rattachant à l’origine', () => {
+    expect(resolveRemoteUrl('/db', ORIGINE)).toBe('https://babines.test/db')
+  })
+
+  it('laisse intacte une URL déjà absolue', () => {
+    expect(resolveRemoteUrl('https://ailleurs.test/db', ORIGINE)).toBe('https://ailleurs.test/db')
+    expect(resolveRemoteUrl('http://ailleurs.test/db', ORIGINE)).toBe('http://ailleurs.test/db')
+  })
+
+  it('produit une URL que PouchDB traite comme distante, non comme une base locale', () => {
+    // C'est l'assertion qui compte. PouchDB choisit son adaptateur d'apres la
+    // forme du nom : un chemin relatif donne « leveldb », donc une base LOCALE,
+    // et la replication devient un aller-retour entre deux bases du navigateur
+    // sans que rien ne le signale.
+    //
+    // Le cas relatif n'est volontairement PAS instancie ici : l'adaptateur
+    // leveldb tenterait de creer /db a la racine du systeme de fichiers et
+    // ferait echouer le test par « OpenError: /db/babines/LOCK ».
+    const distante = new PouchDB(`${resolveRemoteUrl('/db', ORIGINE)}/babines`)
+    expect(distante.adapter).toBe('https')
   })
 })
