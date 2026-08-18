@@ -32,6 +32,7 @@ async function submit() {
 
 <template>
   <form class="quick-add" @submit.prevent="submit">
+    <h2 class="title">Noter une découverte</h2>
     <input
       v-model="input"
       type="text"
@@ -40,7 +41,7 @@ async function submit() {
       placeholder="Coller un lien, ou taper un nom d’artiste"
       aria-label="Capture rapide"
     />
-    <button type="submit" class="yellow" aria-label="Ajouter">
+    <button type="submit" class="yellow" aria-label="Ajouter" title="Ajouter">
       <div class="add-icon"></div>
     </button>
     <p v-if="feedback" class="feedback" role="status">
@@ -62,6 +63,17 @@ async function submit() {
   margin: 1em 0;
   background: var(--surface);
   border: 1px solid var(--trait);
+}
+
+.title {
+  flex-basis: 100%;
+  margin: 0 0 0.2em;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--encre);
 }
 
 input {
@@ -87,12 +99,21 @@ button {
   transition: background-color 0.15s linear;
 }
 
+button:hover {
+  background-color: var(--encre);
+}
+
 .add-icon {
   background-color: var(--encre);
   width: 26px;
   height: 26px;
   -webkit-mask-image: url(../assets/add.svg);
   mask-image: url(../assets/add.svg);
+  transition: background-color 0.15s linear;
+}
+
+button:hover .add-icon {
+  background-color: var(--jaune);
 }
 
 .feedback {
