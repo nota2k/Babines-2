@@ -8,23 +8,25 @@ const library = useLibraryStore()
 
 <template>
   <header class="app-header">
-    <router-link :to="{ name: 'library' }" class="logo-wrapper">
-      <img src="../assets/logo_babines.svg" alt="Babines" class="logo" />
-    </router-link>
+    <div class="app-header-inner conteneur">
+      <router-link :to="{ name: 'library' }" class="logo-wrapper">
+        <img src="../assets/logo_babines.svg" alt="Babines" class="logo" />
+      </router-link>
 
-    <label class="search">
-      <span class="slash" aria-hidden="true">/</span>
-      <input
-        v-model="library.query"
-        type="search"
-        placeholder="Chercher un titre, un artiste, une note…"
-        aria-label="Chercher dans la bibliothèque"
-      />
-    </label>
+      <label class="search">
+        <span class="slash" aria-hidden="true">/</span>
+        <input
+          v-model="library.query"
+          type="search"
+          placeholder="Chercher un titre, un artiste, une note…"
+          aria-label="Chercher dans la bibliothèque"
+        />
+      </label>
 
-    <p class="count">
-      {{ library.filtered.length }} entrée<span v-if="library.filtered.length > 1">s</span>
-    </p>
+      <p class="count">
+        {{ library.filtered.length }} entrée<span v-if="library.filtered.length > 1">s</span>
+      </p>
+    </div>
   </header>
 </template>
 
@@ -33,12 +35,16 @@ const library = useLibraryStore()
   position: sticky;
   top: 0;
   z-index: 10;
+  background: var(--encre);
+  color: #fff;
+}
+
+.app-header-inner {
   display: flex;
   align-items: center;
   gap: 1.2em;
-  padding: 0.8em clamp(16px, 2.6vw, 36px);
-  background: var(--encre);
-  color: #fff;
+  padding-top: 0.8em;
+  padding-bottom: 0.8em;
 }
 
 .logo-wrapper {
@@ -92,7 +98,7 @@ const library = useLibraryStore()
 }
 
 @media (max-width: 600px) {
-  .app-header {
+  .app-header-inner {
     flex-wrap: wrap;
   }
 

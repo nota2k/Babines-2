@@ -16,6 +16,11 @@
 
   /* Alias : du code existant référence encore --yellow directement. */
   --yellow: var(--jaune);
+
+  /* Largeur de page — utilisée pour l'instant par le conteneur interne
+     de l'en-tête (AppHeader.vue). */
+  --largeur-page: 1280px;
+  --marge-page: clamp(16px, 2.6vw, 36px);
 }
 
 *,
@@ -62,4 +67,13 @@ main {
 
 .back:hover {
   color: var(--encre-douce);
+}
+
+/* Conteneur centré et contraint en largeur, à l'intérieur d'une barre
+   pleine largeur (utilisé par AppHeader.vue). */
+.conteneur {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding-left: var(--marge-page);
+  padding-right: var(--marge-page);
 }
