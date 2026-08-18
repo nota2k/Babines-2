@@ -584,18 +584,19 @@ describe('searchVideos', () => {
   ]
 
   it('interroge le bon webhook avec la requête encodée', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(jsonResponse(REPONSE))
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(REPONSE))
+    vi.stubGlobal('fetch', fetchMock)
     const imports = useImportStore()
 
     await imports.searchVideos('Talking Heads Once in a Lifetime')
 
-    expect(globalThis.fetch).toHaveBeenCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       `${BASE}/searchvideos?q=Talking%20Heads%20Once%20in%20a%20Lifetime`,
     )
   })
 
   it('renvoie les candidats traduits', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(jsonResponse(REPONSE))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(REPONSE)))
     const imports = useImportStore()
 
     const candidats = await imports.searchVideos('Talking Heads')
@@ -613,14 +614,14 @@ describe('searchVideos', () => {
   })
 
   it('renvoie une liste vide quand YouTube ne trouve rien', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(jsonResponse([{ items: [] }]))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([{ items: [] }])))
     const imports = useImportStore()
 
     expect(await imports.searchVideos('zzzz')).toEqual([])
   })
 
   it('lève une ImportError portant le statut sur une réponse en erreur', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(errorResponse(500))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(errorResponse(500)))
     const imports = useImportStore()
 
     await expect(imports.searchVideos('Talking Heads')).rejects.toMatchObject({
@@ -631,11 +632,12 @@ describe('searchVideos', () => {
 
   it('refuse d’appeler le réseau quand n8n n’est pas configuré', async () => {
     vi.stubEnv('VITE_N8N_BASE_URL', '')
-    globalThis.fetch = vi.fn()
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
     const imports = useImportStore()
 
     await expect(imports.searchVideos('Talking Heads')).rejects.toThrow(/VITE_N8N_BASE_URL/)
-    expect(globalThis.fetch).not.toHaveBeenCalled()
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
 
@@ -647,14 +649,14 @@ describe('playlistContains', () => {
   ]
 
   it('trouve une vidéo présente et rapporte le nombre d’éléments examinés', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(jsonResponse(CONTENU))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(CONTENU)))
     const imports = useImportStore()
 
     expect(await imports.playlistContains('PL_Y', 'V2')).toEqual({ found: true, checked: 2 })
   })
 
   it('ne trouve pas une vidéo absente, en rapportant ce qui a été examiné', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(jsonResponse(CONTENU))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(CONTENU)))
     const imports = useImportStore()
 
     // `checked` est ce qui permet à l'écran de dire « absente des 2 premières »
@@ -663,32 +665,34 @@ describe('playlistContains', () => {
   })
 
   it('interroge le contenu de la bonne playlist', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(jsonResponse(CONTENU))
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(CONTENU))
+    vi.stubGlobal('fetch', fetchMock)
     const imports = useImportStore()
 
     await imports.playlistContains('PL_Y', 'V1')
 
-    expect(globalThis.fetch).toHaveBeenCalledWith(`${BASE}/youtube/items?playlistId=PL_Y`)
+    expect(fetchMock).toHaveBeenCalledWith(`${BASE}/youtube/items?playlistId=PL_Y`)
   })
 
   it('lit l’identifiant même sous snippet.resourceId', async () => {
-    globalThis.fetch = vi
-      .fn()
-      .mockResolvedValue(jsonResponse([{ snippet: { resourceId: { videoId: 'V3' } } }]))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse([{ snippet: { resourceId: { videoId: 'V3' } } }])),
+    )
     const imports = useImportStore()
 
     expect(await imports.playlistContains('PL_Y', 'V3')).toEqual({ found: true, checked: 1 })
   })
 
   it('traite une playlist vide sans jeter', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(jsonResponse([]))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([])))
     const imports = useImportStore()
 
     expect(await imports.playlistContains('PL_Y', 'V1')).toEqual({ found: false, checked: 0 })
   })
 
   it('lève sur une réponse en erreur : c’est à l’appelant de décider de passer outre', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(errorResponse(404))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(errorResponse(404)))
     const imports = useImportStore()
 
     await expect(imports.playlistContains('PL_Y', 'V1')).rejects.toMatchObject({
@@ -771,18 +775,19 @@ describe('resolveOne — résolution à l’enregistrement', () => {
 
 describe('addVideoToPlaylist', () => {
   it('poste sur le bon webhook avec la vidéo et la playlist', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(jsonResponse([{ id: 'PLI_1' }]))
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse([{ id: 'PLI_1' }]))
+    vi.stubGlobal('fetch', fetchMock)
     const imports = useImportStore()
 
     await imports.addVideoToPlaylist({ videoId: 'V1', playlistId: 'PL_Y' })
 
-    expect(globalThis.fetch).toHaveBeenCalledWith(`${BASE}/addvideotoyoutube?id=V1&playlistId=PL_Y`, {
+    expect(fetchMock).toHaveBeenCalledWith(`${BASE}/addvideotoyoutube?id=V1&playlistId=PL_Y`, {
       method: 'POST',
     })
   })
 
   it('lève une ImportError portant le statut quand YouTube refuse', async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue(errorResponse(403))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(errorResponse(403)))
     const imports = useImportStore()
 
     await expect(
@@ -792,26 +797,30 @@ describe('addVideoToPlaylist', () => {
 
   it('refuse d’appeler le réseau quand n8n n’est pas configuré', async () => {
     vi.stubEnv('VITE_N8N_BASE_URL', '')
-    globalThis.fetch = vi.fn()
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
     const imports = useImportStore()
 
     await expect(imports.addVideoToPlaylist({ videoId: 'V1', playlistId: 'PL_Y' })).rejects.toThrow(
       /VITE_N8N_BASE_URL/,
     )
-    expect(globalThis.fetch).not.toHaveBeenCalled()
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('ne touche pas au document de l’entrée : la playlist YouTube est la seule destination', async () => {
     // Garde-fou de la contrainte du flux. Si ce test tombe, c'est qu'une écriture
     // s'est glissée dans le chemin sortant — la décision était de n'en faire aucune.
+    // Les quatre actions du flux sont exercées, pas seulement les deux qui écrivent.
     const db = getDb()
     const { rev } = await db.put(pendingDoc('V1'))
     const avant = await db.get('track:youtube:V1')
 
-    globalThis.fetch = vi.fn().mockResolvedValue(jsonResponse([{ id: 'PLI_1' }]))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse([{ id: 'PLI_1' }])))
     const imports = useImportStore()
 
     await imports.searchVideos('Aphex Twin Windowlicker')
+    await imports.fetchPlaylists('youtube')
+    await imports.playlistContains('PL_Y', 'V1')
     await imports.addVideoToPlaylist({ videoId: 'V1', playlistId: 'PL_Y' })
 
     const apres = await db.get('track:youtube:V1')
