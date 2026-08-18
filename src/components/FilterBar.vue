@@ -20,16 +20,6 @@ function reset() {
       <option value="artist">Artistes</option>
     </select>
 
-    <select v-model="library.platform" aria-label="Plateforme">
-      <option value="">Toutes les plateformes</option>
-      <option v-for="platform in library.platforms" :key="platform" :value="platform">{{ platform }}</option>
-    </select>
-
-    <select v-model="library.playlist" aria-label="Playlist">
-      <option value="">Toutes les playlists</option>
-      <option v-for="name in library.playlists" :key="name" :value="name">{{ name }}</option>
-    </select>
-
     <select v-model="library.tag" aria-label="Tag">
       <option value="">Tous les tags</option>
       <option v-for="tag in library.tags" :key="tag" :value="tag">{{ tag }}</option>

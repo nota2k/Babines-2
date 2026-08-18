@@ -1,9 +1,8 @@
 <script setup>
 // Colonne de navigation par playlist (demande explicite de la partenaire
 // humaine, cf. docs/superpowers/specs/2026-08-18-babines-v2-design-visuel.md).
-// La sélection écrit dans library.playlist : le filtre reste cohérent avec
-// celui de FilterBar, quelle que soit l'entrée utilisée. Le sélecteur de
-// plateforme écrit dans library.platform, pour la même raison.
+// C'est ici, et seulement ici, que la playlist (library.playlist) et la
+// source (library.platform) se pilotent : FilterBar ne les propose plus.
 import { computed, watch } from 'vue'
 import { useLibraryStore } from '@/stores/library.js'
 import { PLATFORM_LABELS, platformLabel } from '@/services/platforms.js'
@@ -39,7 +38,7 @@ watch(
       <h2 class="label">Playlists</h2>
       <span class="total">{{ displayedPlaylists.length }}</span>
     </div>
-    <select v-model="library.platform" class="platform-select" aria-label="Filtrer les playlists par source">
+    <select v-model="library.platform" class="platform-select" aria-label="Source">
       <option value="">Toutes les sources</option>
       <option v-for="platform in platformOptions" :key="platform" :value="platform">
         {{ platformLabel(platform) }}
