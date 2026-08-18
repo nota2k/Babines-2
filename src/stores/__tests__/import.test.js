@@ -657,8 +657,8 @@ describe('playlistContains', () => {
     global.fetch = vi.fn().mockResolvedValue(jsonResponse(CONTENU))
     const imports = useImportStore()
 
-    // `checked` est ce qui permet à l’écran de dire « absente des 2 premières »
-    // plutôt que d’affirmer une absence que la troncature ne garantit pas.
+    // `checked` est ce qui permet à l'écran de dire « absente des 2 premières »
+    // plutôt que d'affirmer une absence que la troncature ne garantit pas.
     expect(await imports.playlistContains('PL_Y', 'V9')).toEqual({ found: false, checked: 2 })
   })
 
