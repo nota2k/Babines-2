@@ -47,7 +47,7 @@ async function exportNow() {
       :title="`Exporter ${scope === 'library' ? 'toute la bibliothèque' : 'la sélection'} (${library.filtered.length})`"
       @click="exportNow"
     >
-      <img src="../assets/dog_3.svg" alt="" class="dog" />
+      <span class="dog dog--export" aria-hidden="true"></span>
       <span class="visually-hidden">
         Exporter {{ scope === 'library' ? 'toute la bibliothèque' : 'la sélection' }} ({{ library.filtered.length }})
       </span>
@@ -86,6 +86,18 @@ async function exportNow() {
   animation: helloDogs 0.8s infinite alternate-reverse ease-in-out both;
 }
 
+/* Inversion au survol : la pastille devient noire, le dessin devient jaune.
+   Ici l'élément interactif est un bouton, pas un lien. */
+.pastille:hover,
+.pastille:focus-visible {
+  background: var(--encre);
+}
+
+.pastille:hover .dog,
+.pastille:focus-visible .dog {
+  background-color: var(--jaune);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dog {
     animation: none;
@@ -103,7 +115,20 @@ async function exportNow() {
 
 .dog {
   width: 76px;
-  height: auto;
+  background-color: var(--encre);
+  transition: background-color 0.15s linear;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.dog--export {
+  -webkit-mask-image: url('../assets/dog_3.svg');
+  mask-image: url('../assets/dog_3.svg');
+  aspect-ratio: 204.35 / 135.56;
 }
 
 .label {
