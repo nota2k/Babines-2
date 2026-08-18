@@ -94,6 +94,24 @@ main.library {
 }
 
 .list-card {
+  /* Définition unique des colonnes de la liste, partagée par l'en-tête de
+     tri (SortBar.vue) et les lignes (EntryRow.vue) : rang et badge de
+     largeur fixe, titre/artiste/note en proportions souples, puis tags et
+     sources calés à droite. Toute modification des proportions se fait ici,
+     à un seul endroit, pour que les deux ne puissent plus diverger.
+     Aucune colonne en `auto` : une colonne qui se dimensionne sur son
+     contenu calcule une largeur différente selon ce qu'elle contient
+     (une pastille SPOTIFY dans une ligne, « Modifié récemment » dans
+     l'en-tête), ce qui désaligne les deux grilles. Tags et sources ont
+     donc une largeur fixe — assez pour une pastille de plateforme, avec
+     retour à la ligne si une entrée en cumule plusieurs.
+     Titre/artiste/note en 5fr/3fr/2fr (50 %/30 %/20 % de l'espace souple) :
+     avec ~1675 entrées importées de YouTube, la colonne note est vide tant
+     qu'aucune n'est annotée, alors que les titres, longs, se tronquaient
+     souvent en 3fr/2fr/2fr. La note garde 2fr pour rester lisible une fois
+     annotée. */
+  --grille-ligne: 26px 16px 74px minmax(0, 5fr) minmax(0, 3fr) minmax(0, 2fr) minmax(0, 90px) minmax(0, 96px);
+
   background: var(--surface);
   border: 1px solid var(--trait);
   display: flex;

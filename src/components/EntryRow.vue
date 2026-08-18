@@ -43,9 +43,13 @@ const rank = computed(() => String(props.index + 1).padStart(2, '0'))
 }
 
 .row a {
-  display: flex;
+  /* Grille partagée avec SortBar.vue (voir --grille-ligne sur .list-card
+     dans LibraryView.vue) : c'est elle qui fixe la position de chaque
+     colonne, plus les largeurs individuelles ci-dessous. */
+  display: grid;
+  grid-template-columns: var(--grille-ligne);
   align-items: baseline;
-  gap: 0.6em;
+  column-gap: 0.6em;
   padding: 0.8em 0.7em;
   color: var(--encre);
   font-family: 'DM Sans', sans-serif;
@@ -57,16 +61,12 @@ const rank = computed(() => String(props.index + 1).padStart(2, '0'))
 }
 
 .rank {
-  flex: 0 0 auto;
-  width: 26px;
   font-family: 'DM Mono', monospace;
   font-size: 11px;
   color: var(--encre-tres-douce);
 }
 
 .pending {
-  flex: 0 0 auto;
-  width: 16px;
   text-align: center;
 }
 
@@ -75,8 +75,6 @@ const rank = computed(() => String(props.index + 1).padStart(2, '0'))
 }
 
 .badge {
-  flex: 0 0 auto;
-  width: 74px;
   text-align: center;
 }
 
@@ -90,29 +88,19 @@ const rank = computed(() => String(props.index + 1).padStart(2, '0'))
 }
 
 .title {
-  flex: 3 1 0;
   font-weight: 700;
 }
 
 .artist,
 .note {
-  flex: 2 1 0;
   color: var(--encre-douce);
 }
 
-.tags {
-  flex: 0 0 auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4em;
-}
-
+.tags,
 .platforms {
-  flex: 0 0 auto;
   display: flex;
   flex-wrap: wrap;
   gap: 0.4em;
-  margin-left: auto;
 }
 
 .badge,
@@ -134,7 +122,10 @@ const rank = computed(() => String(props.index + 1).padStart(2, '0'))
 }
 
 @media screen and (max-width: 768px) {
+  /* La grille de colonnes n'a plus de sens quand la ligne s'empile :
+     on repasse en flux vertical simple, comme avant le passage en grille. */
   .row a {
+    display: flex;
     flex-direction: column;
     align-items: stretch;
     gap: 0.2em;
@@ -147,8 +138,6 @@ const rank = computed(() => String(props.index + 1).padStart(2, '0'))
   .title,
   .artist,
   .note {
-    flex: none;
-    width: auto;
     white-space: normal;
     overflow: visible;
     text-overflow: clip;
@@ -161,10 +150,6 @@ const rank = computed(() => String(props.index + 1).padStart(2, '0'))
 
   .tags:empty {
     display: none;
-  }
-
-  .platforms {
-    margin-left: 0;
   }
 }
 </style>
