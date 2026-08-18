@@ -16,7 +16,10 @@ export default defineConfig({
       workbox: {
         // La coquille de l'app est préchargée ; les données viennent d'IndexedDB
         // et jamais du réseau — le hors-ligne est acquis par construction.
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,ttf}'],
+        // Les deux casses de TTF sont nécessaires : les polices du projet sont
+        // nommées en majuscules, et glob est sensible à la casse hors macOS —
+        // un build Linux ne les préchargerait pas autrement.
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,ttf,TTF,woff,woff2}'],
       },
       manifest: {
         name: 'Babines',
