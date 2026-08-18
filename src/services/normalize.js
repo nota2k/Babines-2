@@ -73,7 +73,10 @@ export function splitYoutubeTitle(rawTitle = '') {
 }
 
 const URL_PATTERNS = [
-  { platform: 'spotify', re: /open\.spotify\.com\/(?:intl-[a-z]{2}\/)?track\/([A-Za-z0-9]{22})(?![A-Za-z0-9])/ },
+  {
+    platform: 'spotify',
+    re: /open\.spotify\.com\/(?:intl-[a-z]{2}\/)?track\/([A-Za-z0-9]{22})(?![A-Za-z0-9])/,
+  },
   { platform: 'spotify', re: /^spotify:track:([A-Za-z0-9]{22})$/ },
   { platform: 'deezer', re: /deezer\.com\/(?:[a-z]{2}\/)?track\/(\d+)/ },
   { platform: 'youtube', re: /youtube\.com\/watch\?(?:[^\s]*&)?v=([A-Za-z0-9_-]{11})/ },
@@ -235,6 +238,47 @@ export function fromYoutubeItem(raw) {
     addedAt: raw.addedAt || raw.snippet?.publishedAt || null,
     url: externalId ? `https://www.youtube.com/watch?v=${externalId}` : null,
   }
+}
+
+/**
+ * Traduit la réponse du workflow `searchvideos` en candidats affichables.
+ *
+ * Volontairement hors de ADAPTERS : cette table alimente toTrackDoc, donc
+ * PouchDB, alors qu'un candidat de recherche n'est jamais destiné à devenir un
+ * document. L'y inscrire inviterait une écriture que ce flux exclut.
+ *
+ * Le titre n'est pas découpé par splitYoutubeTitle : c'est le titre complet qui
+ * permet de distinguer six candidats les uns des autres, et donc de choisir.
+ */
+export function fromYoutubeSearchResults(payload) {
+  // Trois formes possibles selon d'où vient la charge : l'API répond
+  // `{ items: [...] }`, mais le workflow affecte `items` puis répond
+  // `allIncomingItems`, ce qui enveloppe le tout dans un tableau.
+  const enveloppe = Array.isArray(payload) ? payload[0] : payload
+  const items = enveloppe?.items
+  if (!Array.isArray(items)) return []
+
+  return (
+    items
+      .map((item) => {
+        // Le videoId vit sous `id.videoId` dans la réponse brute, ou à plat quand
+        // un nœud « Edit Fields » l'a aplati : même prudence que fromYoutubeItem.
+        const videoId = item?.id?.videoId || item?.videoId || null
+        if (!videoId) return null
+        const snippet = item?.snippet || {}
+        return {
+          videoId,
+          title: snippet.title || '',
+          channel: snippet.channelTitle || '',
+          thumbnail: snippet.thumbnails?.medium?.url || '',
+          url: `https://www.youtube.com/watch?v=${videoId}`,
+          publishedAt: snippet.publishedAt || null,
+        }
+      })
+      // Un résultat sans identifiant ne pourrait pas être envoyé : le garder
+      // afficherait une vignette dont le bouton ne peut rien faire.
+      .filter(Boolean)
+  )
 }
 
 // Deezer n'existe pas encore côté n8n : sa forme de sortie est définie plate et

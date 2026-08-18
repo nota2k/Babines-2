@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { matchKey, stripNoise } from '@/services/normalize.js'
+import { matchKey, stripNoise, fromYoutubeSearchResults } from '@/services/normalize.js'
 
 describe('stripNoise', () => {
   it('retire une parenthèse parasite', () => {
@@ -197,11 +197,15 @@ describe('parseShareUrl', () => {
   })
 
   it('reconnaît une URL Spotify localisée', () => {
-    expect(parseShareUrl('https://open.spotify.com/intl-fr/track/4Vy7V1tayxddOy2pGkOVT0').platform).toBe('spotify')
+    expect(
+      parseShareUrl('https://open.spotify.com/intl-fr/track/4Vy7V1tayxddOy2pGkOVT0').platform,
+    ).toBe('spotify')
   })
 
   it('reconnaît un URI Spotify', () => {
-    expect(parseShareUrl('spotify:track:4Vy7V1tayxddOy2pGkOVT0').externalId).toBe('4Vy7V1tayxddOy2pGkOVT0')
+    expect(parseShareUrl('spotify:track:4Vy7V1tayxddOy2pGkOVT0').externalId).toBe(
+      '4Vy7V1tayxddOy2pGkOVT0',
+    )
   })
 
   it('reconnaît une URL Deezer', () => {
@@ -213,7 +217,9 @@ describe('parseShareUrl', () => {
   })
 
   it('reconnaît une URL YouTube longue avec paramètres', () => {
-    expect(parseShareUrl('https://www.youtube.com/watch?v=UBS4Gi1y_nc&list=PL1').externalId).toBe('UBS4Gi1y_nc')
+    expect(parseShareUrl('https://www.youtube.com/watch?v=UBS4Gi1y_nc&list=PL1').externalId).toBe(
+      'UBS4Gi1y_nc',
+    )
   })
 
   it('reconnaît une URL YouTube courte', () => {
@@ -468,12 +474,26 @@ describe('adaptateurs YouTube', () => {
 
 describe('adaptateurs Deezer', () => {
   it('laisse passer une playlist déjà au format cible', () => {
-    const raw = { id: '123', name: 'Rave', description: '', trackCount: 4, url: 'https://deezer.com/playlist/123' }
+    const raw = {
+      id: '123',
+      name: 'Rave',
+      description: '',
+      trackCount: 4,
+      url: 'https://deezer.com/playlist/123',
+    }
     expect(fromDeezerPlaylist(raw)).toEqual(raw)
   })
 
   it('laisse passer un morceau déjà au format cible et complète l’URL manquante', () => {
-    expect(fromDeezerTrack({ externalId: '3135556', title: 'T', artist: 'A', album: 'Al', addedAt: null })).toEqual({
+    expect(
+      fromDeezerTrack({
+        externalId: '3135556',
+        title: 'T',
+        artist: 'A',
+        album: 'Al',
+        addedAt: null,
+      }),
+    ).toEqual({
       externalId: '3135556',
       title: 'T',
       artist: 'A',
@@ -496,11 +516,77 @@ describe('ADAPTERS', () => {
 describe('chaînage adaptateur → toTrackDoc sur les données réelles', () => {
   it('traduit le dump Spotify figé jusqu’au document final', () => {
     const docs = likedTracksData.map((row) =>
-      toTrackDoc(fromSpotifyTrack(row), { platform: 'spotify', playlistId: null, playlistName: 'Titres likés' }, NOW),
+      toTrackDoc(
+        fromSpotifyTrack(row),
+        { platform: 'spotify', playlistId: null, playlistName: 'Titres likés' },
+        NOW,
+      ),
     )
     expect(docs.length).toBeGreaterThan(10)
     expect(docs.every((d) => d._id.startsWith('track:spotify:'))).toBe(true)
-    expect(docs.every((d) => d.sources[0].url.startsWith('https://open.spotify.com/track/'))).toBe(true)
+    expect(docs.every((d) => d.sources[0].url.startsWith('https://open.spotify.com/track/'))).toBe(
+      true,
+    )
     expect(docs.every((d) => d.artist && d.title)).toBe(true)
+  })
+})
+
+describe('fromYoutubeSearchResults', () => {
+  const ITEM = {
+    id: { videoId: 'UBS4Gi1y_nc' },
+    snippet: {
+      title: 'Aphex Twin - Windowlicker (Official Video)',
+      channelTitle: 'Warp Records',
+      publishedAt: '2009-10-27T12:00:00Z',
+      thumbnails: { medium: { url: 'https://i.ytimg.com/vi/UBS4Gi1y_nc/mqdefault.jpg' } },
+    },
+  }
+
+  const CANDIDAT = {
+    videoId: 'UBS4Gi1y_nc',
+    title: 'Aphex Twin - Windowlicker (Official Video)',
+    channel: 'Warp Records',
+    thumbnail: 'https://i.ytimg.com/vi/UBS4Gi1y_nc/mqdefault.jpg',
+    url: 'https://www.youtube.com/watch?v=UBS4Gi1y_nc',
+    publishedAt: '2009-10-27T12:00:00Z',
+  }
+
+  it(`lit la forme brute de l'API YouTube`, () => {
+    expect(fromYoutubeSearchResults({ items: [ITEM] })).toEqual([CANDIDAT])
+  })
+
+  it(`défait l'enveloppe que produit le nœud n8n`, () => {
+    // Le workflow searchvideos affecte `items` puis répond `allIncomingItems` :
+    // le client reçoit `[{ items: [...] }]`, pas `{ items: [...] }`.
+    expect(fromYoutubeSearchResults([{ items: [ITEM] }])).toEqual([CANDIDAT])
+  })
+
+  it(`accepte un videoId déjà aplati par un « Edit Fields »`, () => {
+    const aplati = { videoId: 'UBS4Gi1y_nc', snippet: ITEM.snippet }
+    expect(fromYoutubeSearchResults({ items: [aplati] })).toEqual([CANDIDAT])
+  })
+
+  it(`laisse la miniature vide plutôt que de jeter quand elle manque`, () => {
+    const sansImage = { id: { videoId: 'A1' }, snippet: { title: 'Sans image', channelTitle: 'X' } }
+    expect(fromYoutubeSearchResults({ items: [sansImage] })).toEqual([
+      {
+        videoId: 'A1',
+        title: 'Sans image',
+        channel: 'X',
+        thumbnail: '',
+        url: 'https://www.youtube.com/watch?v=A1',
+        publishedAt: null,
+      },
+    ])
+  })
+
+  it(`écarte un résultat sans identifiant, qu'on ne saurait pas envoyer`, () => {
+    expect(fromYoutubeSearchResults({ items: [{ snippet: { title: 'Orphelin' } }] })).toEqual([])
+  })
+
+  it(`renvoie une liste vide plutôt que de jeter sur une réponse inattendue`, () => {
+    expect(fromYoutubeSearchResults(null)).toEqual([])
+    expect(fromYoutubeSearchResults({})).toEqual([])
+    expect(fromYoutubeSearchResults([])).toEqual([])
   })
 })
