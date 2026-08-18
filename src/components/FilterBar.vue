@@ -35,17 +35,6 @@ function reset() {
       <option v-for="tag in library.tags" :key="tag" :value="tag">{{ tag }}</option>
     </select>
 
-    <select v-model="library.sortBy" aria-label="Tri">
-      <option value="updatedAt">Modifié récemment</option>
-      <option value="createdAt">Ajouté récemment</option>
-      <option value="title">Titre</option>
-      <option value="artist">Artiste</option>
-    </select>
-
-    <button type="button" @click="library.sortAsc = !library.sortAsc">
-      {{ library.sortAsc ? '↑' : '↓' }}
-    </button>
-
     <button type="button" @click="reset">Réinitialiser</button>
   </div>
 </template>
