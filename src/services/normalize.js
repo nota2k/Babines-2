@@ -172,3 +172,87 @@ export function toTrackDoc(raw, source, now = new Date().toISOString()) {
     updatedAt: now,
   }
 }
+
+// ---------------------------------------------------------------------------
+// Adaptateurs : forme réellement émise par chaque workflow n8n → forme unique
+// consommée par toTrackDoc. Les workflows ne sont pas réécrits ; c'est ici que
+// vivent leurs particularités, parce que c'est ici que des tests les couvrent.
+// Formes d'entrée relevées sur les exports versionnés dans docs/n8n/.
+// ---------------------------------------------------------------------------
+
+export function fromSpotifyPlaylist(raw) {
+  return {
+    id: raw.id,
+    name: raw.name || '',
+    description: raw.description || '',
+    trackCount: raw.tracks?.total ?? null,
+    url: raw.id ? `https://open.spotify.com/playlist/${raw.id}` : null,
+  }
+}
+
+export function fromSpotifyTrack(raw) {
+  const track = raw.track && typeof raw.track === 'object' ? raw.track : raw
+  const externalId = track.track_id || track.id || null
+  return {
+    externalId,
+    title: track.title || '',
+    artist: track.artist || '',
+    album: track.album || '',
+    addedAt: track.added_at || null,
+    url: externalId ? `https://open.spotify.com/track/${externalId}` : null,
+  }
+}
+
+export function fromYoutubePlaylist(raw) {
+  const id = raw.id || raw.playlistId || null
+  return {
+    id,
+    name: raw.snippet?.title ?? raw.name ?? '',
+    description: raw.snippet?.description ?? raw.description ?? '',
+    trackCount: raw.contentDetails?.itemCount ?? raw.trackCount ?? null,
+    url: id ? `https://www.youtube.com/playlist?list=${id}` : null,
+  }
+}
+
+export function fromYoutubeItem(raw) {
+  const externalId = raw.videoId || raw.contentDetails?.videoId || null
+  return {
+    externalId,
+    // Le titre reste brut : c'est splitYoutubeTitle, dans toTrackDoc, qui en
+    // extrait artiste et titre, et qui conserve l'original dans rawTitle.
+    title: raw.title || raw.snippet?.title || '',
+    artist: '',
+    album: '',
+    addedAt: raw.addedAt || raw.snippet?.publishedAt || null,
+    url: externalId ? `https://www.youtube.com/watch?v=${externalId}` : null,
+  }
+}
+
+// Deezer n'existe pas encore côté n8n : sa forme de sortie est définie plate et
+// propre (tâche 0), donc l'adaptateur est un passe-plat qui complète l'URL.
+export function fromDeezerPlaylist(raw) {
+  return {
+    id: raw.id,
+    name: raw.name || '',
+    description: raw.description || '',
+    trackCount: raw.trackCount ?? null,
+    url: raw.url || (raw.id ? `https://www.deezer.com/playlist/${raw.id}` : null),
+  }
+}
+
+export function fromDeezerTrack(raw) {
+  return {
+    externalId: raw.externalId,
+    title: raw.title || '',
+    artist: raw.artist || '',
+    album: raw.album || '',
+    addedAt: raw.addedAt || null,
+    url: raw.url || (raw.externalId ? `https://www.deezer.com/track/${raw.externalId}` : null),
+  }
+}
+
+export const ADAPTERS = {
+  spotify: { playlist: fromSpotifyPlaylist, track: fromSpotifyTrack },
+  youtube: { playlist: fromYoutubePlaylist, track: fromYoutubeItem },
+  deezer: { playlist: fromDeezerPlaylist, track: fromDeezerTrack },
+}

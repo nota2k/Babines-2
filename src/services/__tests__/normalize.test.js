@@ -284,3 +284,139 @@ describe('toArtistDoc', () => {
     })
   })
 })
+
+import {
+  fromSpotifyPlaylist,
+  fromSpotifyTrack,
+  fromYoutubePlaylist,
+  fromYoutubeItem,
+  fromDeezerPlaylist,
+  fromDeezerTrack,
+  ADAPTERS,
+} from '@/services/normalize.js'
+
+describe('adaptateurs Spotify', () => {
+  it('aplatit une playlist et lit le nombre de morceaux dans tracks.total', () => {
+    expect(
+      fromSpotifyPlaylist({
+        name: 'BAT BEAT',
+        description: '',
+        tracks: { href: 'https://api.spotify.com/v1/playlists/PL_A/tracks', total: 11 },
+        uri: 'spotify:playlist:PL_A',
+        id: 'PL_A',
+        href: 'https://api.spotify.com/v1/playlists/PL_A',
+      }),
+    ).toEqual({
+      id: 'PL_A',
+      name: 'BAT BEAT',
+      description: '',
+      trackCount: 11,
+      url: 'https://open.spotify.com/playlist/PL_A',
+    })
+  })
+
+  it('aplatit un morceau imbriqué sous track et reconstruit son URL', () => {
+    expect(
+      fromSpotifyTrack({
+        track: {
+          artist: 'Talking Heads',
+          title: 'Burning Down the House',
+          added_at: '2025-04-07T14:34:51Z',
+          album: 'Survival',
+          track_id: '2VNfJpwdEQBLyXajaa6LWT',
+        },
+      }),
+    ).toEqual({
+      externalId: '2VNfJpwdEQBLyXajaa6LWT',
+      title: 'Burning Down the House',
+      artist: 'Talking Heads',
+      album: 'Survival',
+      addedAt: '2025-04-07T14:34:51Z',
+      url: 'https://open.spotify.com/track/2VNfJpwdEQBLyXajaa6LWT',
+    })
+  })
+
+  it('tolère un morceau déjà plat', () => {
+    expect(fromSpotifyTrack({ track_id: 'X1', title: 'T', artist: 'A' }).externalId).toBe('X1')
+  })
+})
+
+describe('adaptateurs YouTube', () => {
+  it('lit un élément de playlist et reconstruit son URL de vidéo', () => {
+    expect(
+      fromYoutubeItem({
+        playlistId: 'PL123',
+        videoId: 'UBS4Gi1y_nc',
+        title: 'Aphex Twin - Windowlicker (Official Video)',
+        description: '…',
+        thumbnail_url: 'https://i.ytimg.com/vi/UBS4Gi1y_nc/default.jpg',
+      }),
+    ).toEqual({
+      externalId: 'UBS4Gi1y_nc',
+      title: 'Aphex Twin - Windowlicker (Official Video)',
+      artist: '',
+      album: '',
+      addedAt: null,
+      url: 'https://www.youtube.com/watch?v=UBS4Gi1y_nc',
+    })
+  })
+
+  it('lit une playlist au format de l’API YouTube', () => {
+    expect(
+      fromYoutubePlaylist({
+        id: 'PL123',
+        snippet: { title: 'Trouvailles', description: 'en vrac' },
+        contentDetails: { itemCount: 42 },
+      }),
+    ).toEqual({
+      id: 'PL123',
+      name: 'Trouvailles',
+      description: 'en vrac',
+      trackCount: 42,
+      url: 'https://www.youtube.com/playlist?list=PL123',
+    })
+  })
+
+  it('tolère une playlist déjà aplatie par n8n', () => {
+    expect(fromYoutubePlaylist({ id: 'PL9', name: 'Déjà plate' }).name).toBe('Déjà plate')
+  })
+})
+
+describe('adaptateurs Deezer', () => {
+  it('laisse passer une playlist déjà au format cible', () => {
+    const raw = { id: '123', name: 'Rave', description: '', trackCount: 4, url: 'https://deezer.com/playlist/123' }
+    expect(fromDeezerPlaylist(raw)).toEqual(raw)
+  })
+
+  it('laisse passer un morceau déjà au format cible et complète l’URL manquante', () => {
+    expect(fromDeezerTrack({ externalId: '3135556', title: 'T', artist: 'A', album: 'Al', addedAt: null })).toEqual({
+      externalId: '3135556',
+      title: 'T',
+      artist: 'A',
+      album: 'Al',
+      addedAt: null,
+      url: 'https://www.deezer.com/track/3135556',
+    })
+  })
+})
+
+describe('ADAPTERS', () => {
+  it('expose un couple playlist/track pour les trois plateformes', () => {
+    for (const platform of ['spotify', 'youtube', 'deezer']) {
+      expect(typeof ADAPTERS[platform].playlist).toBe('function')
+      expect(typeof ADAPTERS[platform].track).toBe('function')
+    }
+  })
+})
+
+describe('chaînage adaptateur → toTrackDoc sur les données réelles', () => {
+  it('traduit le dump Spotify figé jusqu’au document final', () => {
+    const docs = likedTracksData.map((row) =>
+      toTrackDoc(fromSpotifyTrack(row), { platform: 'spotify', playlistId: null, playlistName: 'Titres likés' }, NOW),
+    )
+    expect(docs.length).toBeGreaterThan(10)
+    expect(docs.every((d) => d._id.startsWith('track:spotify:'))).toBe(true)
+    expect(docs.every((d) => d.sources[0].url.startsWith('https://open.spotify.com/track/'))).toBe(true)
+    expect(docs.every((d) => d.artist && d.title)).toBe(true)
+  })
+})
