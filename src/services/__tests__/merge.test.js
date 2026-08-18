@@ -115,6 +115,27 @@ describe('mergeTrackDoc', () => {
     expect(mergeTrackDoc(existing, doc({ sources: [reordered] }), LATER)).toBe(existing)
   })
 
+  it('ne réécrit pas un titre marqué comme corrigé à la main (titleEditedAt)', () => {
+    const existing = doc({
+      _rev: '1-abc',
+      title: 'Titre corrigé à la main',
+      artist: 'Artiste corrigé',
+      titleEditedAt: '2026-08-01T00:00:00Z',
+    })
+    const merged = mergeTrackDoc(existing, doc({ title: 'Mauvais découpage', artist: 'Mauvais artiste', album: 'Nouvel album' }), LATER)
+    expect(merged.title).toBe('Titre corrigé à la main')
+    expect(merged.artist).toBe('Artiste corrigé')
+    // album n'est pas protégé par titleEditedAt : il continue d'être mis à jour.
+    expect(merged.album).toBe('Nouvel album')
+  })
+
+  it('sans titleEditedAt, le réimport écrase le titre et l’artiste comme avant', () => {
+    const existing = doc({ _rev: '1-abc', title: 'Ancien titre', artist: 'Ancien artiste' })
+    const merged = mergeTrackDoc(existing, doc({ title: 'Nouveau titre', artist: 'Nouvel artiste' }), LATER)
+    expect(merged.title).toBe('Nouveau titre')
+    expect(merged.artist).toBe('Nouvel artiste')
+  })
+
   it('rejouer deux fois le même import donne le même état', () => {
     const once = mergeTrackDoc(doc({ _rev: '1-abc' }), doc({ sources: [source({ playlistId: 'PL_B' })] }), LATER)
     const twice = mergeTrackDoc(once, doc({ sources: [source({ playlistId: 'PL_B' })] }), LATER)

@@ -38,10 +38,17 @@ export function mergeTrackDoc(existing, incoming, now = new Date().toISOString()
   if (!existing) return incoming
 
   const sources = mergeSources(existing.sources, incoming.sources)
+  // Une correction manuelle depuis /entree/:id est marquée par titleEditedAt
+  // (posé par EntryDetail.vue). splitYoutubeTitle redonne systématiquement le
+  // même mauvais découpage à partir du même rawTitle : sans cette protection,
+  // un réimport effacerait la correction de l'utilisatrice à chaque fois, sans
+  // trace. `album` n'est pas concerné : l'écran de détail ne permet pas de le
+  // corriger, donc rien ne protège ce champ d'un réimport.
+  const titleProtege = Boolean(existing.titleEditedAt)
   const next = {
     ...existing,
-    title: incoming.title || existing.title,
-    artist: incoming.artist || existing.artist,
+    title: titleProtege ? existing.title : incoming.title || existing.title,
+    artist: titleProtege ? existing.artist : incoming.artist || existing.artist,
     album: incoming.album || existing.album,
     matchKey: incoming.matchKey || existing.matchKey,
     pending: incoming.pending === false ? false : existing.pending,

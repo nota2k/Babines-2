@@ -46,6 +46,12 @@ async function save() {
   const cleanTitle = title.value.trim()
   const cleanArtist = artist.value.trim()
 
+  // Une correction manuelle du titre ou de l'artiste prime sur tout réimport
+  // futur (splitYoutubeTitle redonnerait systématiquement le même mauvais
+  // découpage) : on horodate la correction, mergeTrackDoc s'appuie dessus
+  // pour ne plus réécrire ces deux champs.
+  const titleChanged = !isArtist.value && (cleanTitle !== (props.entry.title || '') || cleanArtist !== (props.entry.artist || ''))
+
   const patch = isArtist.value
     ? { note: note.value, tags, name: cleanName, matchKey: matchKey(cleanName) }
     : {
@@ -57,6 +63,7 @@ async function save() {
         // Une saisie faite uniquement d'espaces ne doit pas faire croire que
         // l'entrée est complétée.
         pending: props.entry.pending && !cleanTitle,
+        ...(titleChanged ? { titleEditedAt: new Date().toISOString() } : {}),
       }
 
   try {
