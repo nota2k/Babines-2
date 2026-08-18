@@ -37,10 +37,23 @@ personne. L'export JSON de l'application fait office de sauvegarde manuelle.
 ## Sécuriser le serveur au premier démarrage
 
 Par défaut, un `express-pouchdb` fraîchement installé n'a pas d'administrateur
-et laisse la base accessible à quiconque peut l'atteindre. Deux réglages sont
-nécessaires, **dans cet ordre précis** :
+et laisse chaque base accessible à quiconque peut l'atteindre. `express-pouchdb`
+n'implémente pas le réglage CouchDB `require_valid_user` ; la protection passe
+par un document `_security` posé sur la base elle-même
+(`node_modules/express-pouchdb/lib/routes/security.js`, qui charge
+`pouchdb-security`). `routes/authorization.js`, lui, ne protège que les
+points d'accès système (`_config`, `_log`, `_active_tasks`, `_db_updates`,
+`_restart`) — jamais les bases de données.
 
-1. **Créer l'administrateur en premier**, avec un mot de passe long généré
+La base `babines` n'existe qu'après la première réplication depuis
+l'application : `_security` ne peut donc se poser qu'après elle. L'ordre
+complet, **à respecter précisément** :
+
+1. **Démarrer le serveur**, et laisser l'application s'y connecter une
+   première fois (en développement, ouvrir la SPA suffit : la réplication
+   crée la base `babines` toute seule).
+
+2. **Créer l'administrateur**, avec un mot de passe long généré
    aléatoirement, jamais versionné :
 
    ```bash
@@ -49,31 +62,40 @@ nécessaires, **dans cet ordre précis** :
      -H 'Content-Type: application/json' -d '"<MOTDEPASSE>"'
    ```
 
-2. **Exiger une session valide en second**, authentifié comme cet
-   administrateur :
+3. **Poser `_security` sur la base `babines`**, authentifié comme cet
+   administrateur — un `members.names` non vide est ce qui ferme l'accès
+   anonyme ; une liste vide signifie « publique » :
 
    ```bash
    curl -s -u '<NOM>:<MOTDEPASSE>' -X PUT \
-     http://127.0.0.1:5984/_config/couch_httpd_auth/require_valid_user \
-     -H 'Content-Type: application/json' -d '"true"'
+     http://127.0.0.1:5984/babines/_security \
+     -H 'Content-Type: application/json' \
+     -d '{"admins":{"names":["<NOM>"],"roles":[]},"members":{"names":["<NOM>"],"roles":[]}}'
    ```
 
-**L'ordre n'est pas cosmétique.** Inverser les deux verrouille le serveur
-avant qu'un compte existe, et plus rien ne peut alors s'authentifier pour
-revenir en arrière. C'est pourquoi ce réglage n'est délibérément pas
-automatisé dans `app.js` : un serveur qui se verrouille lui-même au premier
-démarrage se briquerait sur o2switch, sans compte pour le déverrouiller.
+**L'ordre n'est pas cosmétique.** Créer l'administrateur avant `_security`
+laisse toujours un compte capable de revenir en arrière ; pas de base avant
+l'administrateur, pas d'administrateur avant `_security`. C'est pourquoi ce
+réglage n'est délibérément pas automatisé dans `app.js` : l'automatiser
+imposerait un ordre de démarrage rigide (base créée, puis administrateur,
+puis verrouillage) qu'un redéploiement ou un redémarrage de Passenger
+pourrait facilement inverser.
 
-Vérifier ensuite que l'accès anonyme est bien refusé :
+Vérifier ensuite, dans cet ordre :
 
 ```bash
+# sans session — doit refuser
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5984/babines/_all_docs
-```
+# → 401
 
-Attendu : `401`. **À la vérification de cette procédure, la réponse obtenue a
-été `200`** — malgré l'administrateur créé et `require_valid_user` activé
-(confirmés tous deux dans `server/data/config.json`, et `/_config` refuse
-bien l'accès anonyme avec `401`). Les routes de base de données
-(`/babines`, `/babines/_all_docs`, `/_all_dbs`) restent accessibles sans
-session. Ce point n'est donc **pas résolu** ; voir le rapport de la tâche 4
-pour le détail des commandes exécutées.
+# avec session — doit accepter
+curl -s -c /tmp/babines-cookie -X POST http://127.0.0.1:5984/_session \
+  -H 'Content-Type: application/json' -d '{"name":"<NOM>","password":"<MOTDEPASSE>"}'
+curl -s -b /tmp/babines-cookie -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5984/babines/_all_docs
+# → 200
+
+# _config, sans session — doit refuser (verifie que la protection admin
+# elle-meme n'a pas ete cassee par ce qui precede)
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5984/_config
+# → 401
+```
