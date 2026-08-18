@@ -17,6 +17,10 @@ export const useLibraryStore = defineStore('library', {
     entries: [],
     isLoading: false,
     error: null,
+    // Canal séparé de `error` : un avertissement (ex. migration partielle) ne
+    // doit pas être effacé par la première action réussie, ni prendre la place
+    // d'une vraie panne.
+    notice: null,
     query: '',
     platform: '',
     playlist: '',
@@ -114,7 +118,12 @@ export const useLibraryStore = defineStore('library', {
      */
     async guard(label, run) {
       try {
-        return await run()
+        const resultat = await run()
+        // Une action réussie efface le message précédent : une erreur périmée
+        // affichée sous une action qui vient de marcher est aussi trompeuse
+        // qu'une panne muette.
+        this.error = null
+        return resultat
       } catch (err) {
         this.error = `${label} : ${err.message}`
         throw err

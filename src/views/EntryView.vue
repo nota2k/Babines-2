@@ -18,6 +18,7 @@ onMounted(() => {
   <AppHeader />
   <main class="entry">
     <p v-if="library.error" class="error" role="alert">{{ library.error }}</p>
+    <p v-if="library.notice" class="notice" role="status">{{ library.notice }}</p>
     <EntryDetail v-if="entry" :entry="entry" />
     <p v-else-if="library.isLoading">Chargement…</p>
     <p v-else>
@@ -34,6 +35,12 @@ main.entry {
 .error {
   border: 2px solid #b00020;
   background: #ffe9ec;
+  padding: 0.8em 1em;
+}
+
+.notice {
+  border: 2px solid #ffe13f;
+  background: #fffbe6;
   padding: 0.8em 1em;
 }
 </style>

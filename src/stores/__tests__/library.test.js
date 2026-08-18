@@ -61,6 +61,14 @@ describe('load', () => {
     expect(store.entries).toHaveLength(3)
     expect(store.error).toBeNull()
   })
+
+  it('efface error mais ne touche pas notice', async () => {
+    store.error = 'panne précédente'
+    store.notice = 'migration incomplète'
+    await store.load()
+    expect(store.error).toBeNull()
+    expect(store.notice).toBe('migration incomplète')
+  })
 })
 
 describe('filtres', () => {
@@ -136,6 +144,12 @@ describe('updateEntry', () => {
     expect(entry.note).toBe('à réécouter')
     expect(entry.tags).toEqual(['funk'])
     expect(entry.updatedAt).not.toBe('2026-01-01T00:00:00Z')
+  })
+
+  it('efface une erreur périmée quand une action réussit ensuite', async () => {
+    store.error = 'panne précédente'
+    await store.updateEntry('track:spotify:X1aaaaaaaaaaaaaaaaaaaa', { note: 'ok' })
+    expect(store.error).toBeNull()
   })
 })
 

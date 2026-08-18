@@ -27,7 +27,10 @@ async function bootstrap() {
     // invisible. Ce qui a échoué est resté en base, rien n'est perdu, mais il faut
     // le dire.
     if (migration.failed.length) {
-      library.error =
+      // `notice` et non `error` : c'est un avertissement, pas une panne, et il ne
+      // doit pas être effacé par le premier cycle de réplication qui écrit dans
+      // `error` via guard().
+      library.notice =
         `Migration incomplète : ${migration.failed.length} document(s) n'ont pas pu être convertis. ` +
         `Ils sont toujours en base et seront retentés au prochain démarrage.`
     }

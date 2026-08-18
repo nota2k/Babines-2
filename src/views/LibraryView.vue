@@ -32,6 +32,7 @@ onUnmounted(() => {
   <AppHeader />
   <main class="library">
     <p v-if="library.error" class="error" role="alert">{{ library.error }}</p>
+    <p v-if="library.notice" class="notice" role="status">{{ library.notice }}</p>
 
     <nav class="tabs">
       <router-link :to="{ name: 'import' }">Sources</router-link>
@@ -67,6 +68,12 @@ main.library {
 .error {
   border: 2px solid #b00020;
   background: #ffe9ec;
+  padding: 0.8em 1em;
+}
+
+.notice {
+  border: 2px solid #ffe13f;
+  background: #fffbe6;
   padding: 0.8em 1em;
 }
 

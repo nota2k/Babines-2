@@ -14,6 +14,7 @@ onMounted(() => {
   <AppHeader />
   <main class="duplicates-view">
     <p v-if="library.error" class="error" role="alert">{{ library.error }}</p>
+    <p v-if="library.notice" class="notice" role="status">{{ library.notice }}</p>
     <router-link class="back" :to="{ name: 'library' }">← Bibliothèque</router-link>
     <DuplicateReview />
   </main>
@@ -25,6 +26,12 @@ main.duplicates-view { display: block; }
 .error {
   border: 2px solid #b00020;
   background: #ffe9ec;
+  padding: 0.8em 1em;
+}
+
+.notice {
+  border: 2px solid #ffe13f;
+  background: #fffbe6;
   padding: 0.8em 1em;
 }
 </style>
