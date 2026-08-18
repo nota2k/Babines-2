@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import db from '@/services/db.js';
+import { getDb } from '@/services/db.js';
 import { ref, onMounted } from 'vue';
+
+const db = getDb();
 
 const title = ref('');
 const artist = ref('');

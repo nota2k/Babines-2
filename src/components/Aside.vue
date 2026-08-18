@@ -2,9 +2,10 @@
 import { defineEmits, ref, watch, onMounted } from 'vue';
 import { userSpotifyStore } from '@/stores/spotify';
 import { userYoutubeStore } from '@/stores/youtube';
-import db from '@/services/db.js';
+import { getDb } from '@/services/db.js';
 import { useRoute } from 'vue-router';
 
+const db = getDb();
 const emit = defineEmits(['exportJson', 'clearCache']);
 const storeSpotify = userSpotifyStore();
 const storeYoutube = userYoutubeStore();

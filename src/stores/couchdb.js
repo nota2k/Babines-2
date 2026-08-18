@@ -1,6 +1,8 @@
 // src/stores/couchdb.js
 import { defineStore } from 'pinia';
-import db from '@/services/db.js';
+import { getDb } from '@/services/db.js';
+
+const db = getDb();
 
 export const useCouchDBStore = defineStore('couchdb', {
   state: () => ({
