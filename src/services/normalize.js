@@ -72,6 +72,71 @@ export function splitYoutubeTitle(rawTitle = '') {
   return { artist: match[1].trim(), title: stripNoise(match[2]) }
 }
 
+const URL_PATTERNS = [
+  { platform: 'spotify', re: /open\.spotify\.com\/(?:intl-[a-z]{2}\/)?track\/([A-Za-z0-9]+)/ },
+  { platform: 'spotify', re: /^spotify:track:([A-Za-z0-9]+)$/ },
+  { platform: 'deezer', re: /deezer\.com\/(?:[a-z]{2}\/)?track\/(\d+)/ },
+  { platform: 'youtube', re: /youtube\.com\/watch\?(?:[^\s]*&)?v=([A-Za-z0-9_-]{11})/ },
+  { platform: 'youtube', re: /youtu\.be\/([A-Za-z0-9_-]{11})/ },
+]
+
+/**
+ * Extrait plateforme et identifiant d'un lien collé ou partagé.
+ * Lecture pure de la chaîne : fonctionne en mode avion.
+ */
+export function parseShareUrl(input = '') {
+  const url = String(input).trim()
+  if (!url) return null
+  for (const { platform, re } of URL_PATTERNS) {
+    const match = url.match(re)
+    if (match) return { platform, externalId: match[1], url }
+  }
+  return null
+}
+
+/** Entrée créée à la capture, enrichie plus tard par GET /resolve. */
+export function toPendingTrackDoc(parsed, now = new Date().toISOString()) {
+  return {
+    _id: `track:${parsed.platform}:${parsed.externalId}`,
+    type: 'track',
+    title: '',
+    artist: '',
+    album: '',
+    matchKey: '',
+    pending: true,
+    sources: [
+      {
+        platform: parsed.platform,
+        playlistId: null,
+        playlistName: null,
+        externalId: parsed.externalId,
+        addedAt: now,
+        url: parsed.url,
+        rawTitle: null,
+      },
+    ],
+    note: '',
+    tags: [],
+    createdAt: now,
+    updatedAt: now,
+  }
+}
+
+export function toArtistDoc(name, now = new Date().toISOString(), id = crypto.randomUUID()) {
+  return {
+    _id: `artist:${id}`,
+    type: 'artist',
+    name: String(name).trim(),
+    matchKey: matchKey(name),
+    pending: false,
+    sources: [],
+    note: '',
+    tags: [],
+    createdAt: now,
+    updatedAt: now,
+  }
+}
+
 /**
  * Traduit un élément renvoyé par n8n vers le document unique de Babines.
  * C'est le seul endroit où vivent les particularités de chaque plateforme.

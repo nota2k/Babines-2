@@ -184,3 +184,91 @@ describe('toTrackDoc sur les données réelles', () => {
     expect(docs.every((d) => d.note === '' && d.tags.length === 0)).toBe(true)
   })
 })
+
+import { parseShareUrl, toPendingTrackDoc, toArtistDoc } from '@/services/normalize.js'
+
+describe('parseShareUrl', () => {
+  it('reconnaît une URL Spotify', () => {
+    expect(parseShareUrl('https://open.spotify.com/track/2VNfJpwdEQBLyXajaa6LWT?si=ab12')).toEqual({
+      platform: 'spotify',
+      externalId: '2VNfJpwdEQBLyXajaa6LWT',
+      url: 'https://open.spotify.com/track/2VNfJpwdEQBLyXajaa6LWT?si=ab12',
+    })
+  })
+
+  it('reconnaît une URL Spotify localisée', () => {
+    expect(parseShareUrl('https://open.spotify.com/intl-fr/track/4Vy7V1tayxddOy2pGkOVT0').platform).toBe('spotify')
+  })
+
+  it('reconnaît un URI Spotify', () => {
+    expect(parseShareUrl('spotify:track:4Vy7V1tayxddOy2pGkOVT0').externalId).toBe('4Vy7V1tayxddOy2pGkOVT0')
+  })
+
+  it('reconnaît une URL Deezer', () => {
+    expect(parseShareUrl('https://www.deezer.com/fr/track/3135556')).toEqual({
+      platform: 'deezer',
+      externalId: '3135556',
+      url: 'https://www.deezer.com/fr/track/3135556',
+    })
+  })
+
+  it('reconnaît une URL YouTube longue avec paramètres', () => {
+    expect(parseShareUrl('https://www.youtube.com/watch?v=UBS4Gi1y_nc&list=PL1').externalId).toBe('UBS4Gi1y_nc')
+  })
+
+  it('reconnaît une URL YouTube courte', () => {
+    expect(parseShareUrl('https://youtu.be/UBS4Gi1y_nc?t=12').platform).toBe('youtube')
+  })
+
+  it('renvoie null sur du texte libre', () => {
+    expect(parseShareUrl('Pulsallama')).toBeNull()
+    expect(parseShareUrl('')).toBeNull()
+  })
+})
+
+describe('toPendingTrackDoc', () => {
+  it('crée une entrée en attente, annotable immédiatement', () => {
+    const parsed = parseShareUrl('https://youtu.be/UBS4Gi1y_nc')
+    expect(toPendingTrackDoc(parsed, NOW)).toEqual({
+      _id: 'track:youtube:UBS4Gi1y_nc',
+      type: 'track',
+      title: '',
+      artist: '',
+      album: '',
+      matchKey: '',
+      pending: true,
+      sources: [
+        {
+          platform: 'youtube',
+          playlistId: null,
+          playlistName: null,
+          externalId: 'UBS4Gi1y_nc',
+          addedAt: NOW,
+          url: 'https://youtu.be/UBS4Gi1y_nc',
+          rawTitle: null,
+        },
+      ],
+      note: '',
+      tags: [],
+      createdAt: NOW,
+      updatedAt: NOW,
+    })
+  })
+})
+
+describe('toArtistDoc', () => {
+  it('crée une entrée artiste avec un identifiant dédié', () => {
+    expect(toArtistDoc('Pulsallama', NOW, 'fixed-uuid')).toEqual({
+      _id: 'artist:fixed-uuid',
+      type: 'artist',
+      name: 'Pulsallama',
+      matchKey: 'pulsallama',
+      pending: false,
+      sources: [],
+      note: '',
+      tags: [],
+      createdAt: NOW,
+      updatedAt: NOW,
+    })
+  })
+})
