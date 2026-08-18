@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import PouchDB from 'pouchdb'
 import memoryAdapter from 'pouchdb-adapter-memory'
-import { createDb, setDb } from '@/services/db.js'
+import { createDb, setDb, getDb } from '@/services/db.js'
 import { useLibraryStore, displayTitle } from '@/stores/library.js'
 
 PouchDB.plugin(memoryAdapter)
@@ -120,6 +120,13 @@ describe('capture', () => {
   it('refuse une saisie vide', async () => {
     await expect(store.capture('   ')).resolves.toBeNull()
   })
+
+  it('remonte l’erreur sans perdre la saisie quand l’écriture d’une capture échoue', async () => {
+    const db = getDb()
+    db.put = async () => { const e = new Error('disque plein'); e.status = 500; throw e }
+    await expect(store.capture('Gaspard Claus')).rejects.toThrow('disque plein')
+    expect(store.error).toMatch(/Gaspard Claus/)
+  })
 })
 
 describe('updateEntry', () => {
@@ -141,6 +148,42 @@ describe('mergeEntries', () => {
     expect(kept.note).toContain('version clip')
     expect(kept.tags).toContain('électro')
     expect(store.entries.find((e) => e._id === 'track:youtube:Y2')).toBeUndefined()
+  })
+})
+
+describe('remontée des erreurs — rien ne doit échouer en silence', () => {
+  it('renseigne l’erreur et relance quand l’écriture d’une modification échoue', async () => {
+    const db = getDb()
+    db.put = async () => { const e = new Error('quota dépassé'); e.status = 500; throw e }
+
+    await expect(store.updateEntry('track:spotify:X1aaaaaaaaaaaaaaaaaaaa', { note: 'perdue ?' })).rejects.toThrow('quota dépassé')
+    expect(store.error).toMatch(/quota dépassé/)
+  })
+
+  it('renseigne l’erreur et relance quand une suppression échoue', async () => {
+    const db = getDb()
+    db.remove = async () => { throw new Error('base verrouillée') }
+
+    await expect(store.removeEntry('track:spotify:X1aaaaaaaaaaaaaaaaaaaa')).rejects.toThrow('base verrouillée')
+    expect(store.error).toMatch(/base verrouillée/)
+  })
+})
+
+describe('mergeEntries — échec de la suppression du doublon', () => {
+  it('conserve la fusion déjà écrite, la reflète localement, et signale l’échec', async () => {
+    await store.updateEntry('track:youtube:Y2', { note: 'version clip' })
+    const db = getDb()
+    db.remove = async () => { throw new Error('suppression refusée') }
+
+    // La fusion ne doit pas être annulée : elle est déjà en base.
+    await store.mergeEntries('track:spotify:X1aaaaaaaaaaaaaaaaaaaa', 'track:youtube:Y2')
+
+    const kept = store.entries.find((e) => e._id === 'track:spotify:X1aaaaaaaaaaaaaaaaaaaa')
+    expect(kept.sources).toHaveLength(2)
+    expect(kept.note).toContain('version clip')
+    // Le doublon survit : rien n'est perdu, il pourra être refusionné.
+    expect(store.entries.find((e) => e._id === 'track:youtube:Y2')).toBeTruthy()
+    expect(store.error).toMatch(/suppression/i)
   })
 })
 

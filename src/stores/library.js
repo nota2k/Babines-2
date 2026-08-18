@@ -94,6 +94,20 @@ export const useLibraryStore = defineStore('library', {
       else this.entries[index] = doc
     },
 
+    /**
+     * Exécute une écriture en surfaçant l'échec dans l'état du store avant de le
+     * relancer. Une erreur silencieuse est le défaut qui a rendu une panne
+     * invisible pendant quatorze mois dans la version précédente.
+     */
+    async guard(label, run) {
+      try {
+        return await run()
+      } catch (err) {
+        this.error = `${label} : ${err.message}`
+        throw err
+      }
+    },
+
     /** Capture rapide : un lien devient un morceau en attente, du texte un artiste. */
     async capture(input, now = new Date().toISOString()) {
       const text = String(input || '').trim()
@@ -113,7 +127,7 @@ export const useLibraryStore = defineStore('library', {
         }
       }
 
-      const result = await db.put(doc)
+      const result = await this.guard(`Impossible d’enregistrer « ${text} »`, () => db.put(doc))
       const saved = { ...doc, _rev: result.rev }
       this.replaceLocal(saved)
       return saved
@@ -121,19 +135,23 @@ export const useLibraryStore = defineStore('library', {
 
     async updateEntry(id, patch, now = new Date().toISOString()) {
       const db = getDb()
-      const current = await db.get(id)
-      const next = { ...current, ...patch, updatedAt: now }
-      const result = await db.put(next)
-      const saved = { ...next, _rev: result.rev }
-      this.replaceLocal(saved)
-      return saved
+      return this.guard('Enregistrement impossible', async () => {
+        const current = await db.get(id)
+        const next = { ...current, ...patch, updatedAt: now }
+        const result = await db.put(next)
+        const saved = { ...next, _rev: result.rev }
+        this.replaceLocal(saved)
+        return saved
+      })
     },
 
     async removeEntry(id) {
       const db = getDb()
-      const doc = await db.get(id)
-      await db.remove(doc)
-      this.entries = this.entries.filter((e) => e._id !== id)
+      return this.guard('Suppression impossible', async () => {
+        const doc = await db.get(id)
+        await db.remove(doc)
+        this.entries = this.entries.filter((e) => e._id !== id)
+      })
     },
 
     /** Fusion manuelle de deux entrées : rien n'est perdu, le doublon disparaît. */
@@ -155,11 +173,21 @@ export const useLibraryStore = defineStore('library', {
         updatedAt: now,
       }
 
-      const result = await db.put(merged)
-      await db.remove(drop)
-      this.replaceLocal({ ...merged, _rev: result.rev })
-      this.entries = this.entries.filter((e) => e._id !== dropId)
-      return { ...merged, _rev: result.rev }
+      const result = await this.guard('Fusion impossible', () => db.put(merged))
+      const saved = { ...merged, _rev: result.rev }
+      // La fusion est persistée : on la reflète immédiatement, quoi qu'il advienne
+      // de la suppression du doublon.
+      this.replaceLocal(saved)
+
+      try {
+        await db.remove(drop)
+        this.entries = this.entries.filter((e) => e._id !== dropId)
+      } catch (err) {
+        // Rien n'est perdu : le doublon survit et reste refusionnable.
+        this.error = `Fusion enregistrée, mais le doublon n’a pas pu être supprimé : ${err.message}`
+      }
+
+      return saved
     },
   },
 })
