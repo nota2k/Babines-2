@@ -3,7 +3,7 @@ name: Build & Deploy Vue.js sur o2switch
 on:
   push:
     branches:
-      - review   # adapte au nom de ta branche de production
+      - master   # adapte au nom de ta branche de production
  
 jobs:
   build-and-deploy:
