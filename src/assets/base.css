@@ -9,18 +9,9 @@ html {
 }
 
 main {
-  display: grid;
-  grid-template-columns: 280px auto 130px;
-  grid-template-rows: 80px auto;
-  grid-auto-flow: dense;
-  gap: 20px;
-}
-
-@media screen and (max-width: 768px) {
-  main {
-    display: flex;
-    flex-direction: column;
-  }
+  max-width: 1000px;
+  margin: 0 auto;
+  padding-bottom: 4em;
 }
 
 /* .container {
