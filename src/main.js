@@ -46,8 +46,8 @@ async function bootstrap() {
     return
   }
 
-  // La replication attend une session ; le hors-ligne, lui, n'attend rien.
-  // Une entree capturee sans etre connecte partira a la prochaine session.
+  // La réplication attend une session ; le hors-ligne, lui, n'attend rien.
+  // Une entrée capturée sans être connecté partira à la prochaine session.
   const repliquer = () =>
     startReplication(db, {
       url: import.meta.env.VITE_COUCHDB_URL,
@@ -61,8 +61,8 @@ async function bootstrap() {
     })
 
   library.startReplication = repliquer
-  // Le cookie de session survit au rechargement ; sans cette verification,
-  // la replication resterait en attente d'une reconnexion pourtant inutile.
+  // Le cookie de session survit au rechargement ; sans cette vérification,
+  // la réplication resterait en attente d'une reconnexion pourtant inutile.
   if (await restoreSession()) repliquer()
 
   // Safari purge IndexedDB après ~7 jours sans ouverture. La demande peut être

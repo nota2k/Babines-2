@@ -30,8 +30,8 @@ export const useLibraryStore = defineStore('library', {
     sortBy: 'updatedAt',
     sortAsc: false,
     syncStatus: 'local-only',
-    // Injectee au demarrage : l'ecran de connexion doit pouvoir lancer la
-    // replication sans que les composants connaissent PouchDB.
+    // Injectée au démarrage : l'écran de connexion doit pouvoir lancer la
+    // réplication sans que les composants connaissent PouchDB.
     startReplication: null,
   }),
 

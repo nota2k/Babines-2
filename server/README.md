@@ -37,65 +37,68 @@ personne. L'export JSON de l'application fait office de sauvegarde manuelle.
 ## Sécuriser le serveur au premier démarrage
 
 Par défaut, un `express-pouchdb` fraîchement installé n'a pas d'administrateur
-et laisse chaque base accessible à quiconque peut l'atteindre. `express-pouchdb`
-n'implémente pas le réglage CouchDB `require_valid_user` ; la protection passe
-par un document `_security` posé sur la base elle-même
+et laisse chaque base accessible à quiconque peut l'atteindre.
+
+**Deux pistes ont été essayées et écartées avant d'arriver à la bonne, pour
+ne pas les retenter :**
+
+- `overrideMode: { include: ['routes/authentication', 'routes/authorization'] }`
+  dans `app.js` : n'a jamais fait de différence. Le mode par défaut,
+  `fullCouchDB`, inclut déjà ces deux modules ; ce réglage était un no-op,
+  confirmé en le retirant et en observant que `/_config` refuse toujours
+  l'accès anonyme sans lui.
+- `couch_httpd_auth.require_valid_user` (le réglage CouchDB standard pour
+  exiger une session partout) : `express-pouchdb` ne l'implémente pas du
+  tout. Le fixer à `true` via `/_config` est accepté sans erreur — et sans
+  aucun effet.
+
+**Le vrai mécanisme est un document `_security` posé sur la base elle-même**
 (`node_modules/express-pouchdb/lib/routes/security.js`, qui charge
 `pouchdb-security`). `routes/authorization.js`, lui, ne protège que les
 points d'accès système (`_config`, `_log`, `_active_tasks`, `_db_updates`,
-`_restart`) — jamais les bases de données.
+`_restart`) — jamais les bases de données ; c'est pour ça que la première
+piste semblait marcher sur `_config` tout en laissant `_all_docs` grand
+ouvert.
 
-La base `babines` n'existe qu'après la première réplication depuis
-l'application : `_security` ne peut donc se poser qu'après elle. L'ordre
-complet, **à respecter précisément** :
+### La difficulté : la base n'existe pas encore sur un serveur neuf
 
-1. **Démarrer le serveur**, et laisser l'application s'y connecter une
-   première fois (en développement, ouvrir la SPA suffit : la réplication
-   crée la base `babines` toute seule).
+`_security` se pose sur une base qui existe déjà. Avant cette tâche, la
+base `babines` n'était créée que comme effet de bord de la première
+réplication de l'application — mais la réplication n'est déclenchée que
+par une session valide (`restoreSession()` / connexion via l'écran de
+Babines), et sans administrateur, aucune session ne peut s'ouvrir. Sur un
+serveur tout juste déployé, ce cercle n'a pas de sortie manuelle sûre : le
+temps de le résoudre à la main, `_config` reste ouvert à quiconque atteint
+l'URL, qui pourrait s'y déclarer administrateur avant l'opérateur légitime.
 
-2. **Créer l'administrateur**, avec un mot de passe long généré
-   aléatoirement, jamais versionné :
+**`server/setup.js` fait les trois étapes dans le seul ordre qui évite ce
+piège, et vérifie son propre travail :**
 
-   ```bash
-   node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
-   curl -s -X PUT http://127.0.0.1:5984/_config/admins/<NOM> \
-     -H 'Content-Type: application/json' -d '"<MOTDEPASSE>"'
-   ```
+1. Crée l'administrateur (ferme la fenêtre `_config` ouverte).
+2. Crée la base (elle n'a pas besoin de l'application pour exister).
+3. Pose `_security` dessus.
+4. Vérifie : une lecture anonyme doit renvoyer `401`, une lecture
+   authentifiée `200`. Le script échoue bruyamment (code de sortie non nul)
+   si l'un des deux ne correspond pas — jamais de succès silencieux sur une
+   base mal protégée.
 
-3. **Poser `_security` sur la base `babines`**, authentifié comme cet
-   administrateur — un `members.names` non vide est ce qui ferme l'accès
-   anonyme ; une liste vide signifie « publique » :
-
-   ```bash
-   curl -s -u '<NOM>:<MOTDEPASSE>' -X PUT \
-     http://127.0.0.1:5984/babines/_security \
-     -H 'Content-Type: application/json' \
-     -d '{"admins":{"names":["<NOM>"],"roles":[]},"members":{"names":["<NOM>"],"roles":[]}}'
-   ```
-
-**L'ordre n'est pas cosmétique.** Créer l'administrateur avant `_security`
-laisse toujours un compte capable de revenir en arrière ; pas de base avant
-l'administrateur, pas d'administrateur avant `_security`. C'est pourquoi ce
-réglage n'est délibérément pas automatisé dans `app.js` : l'automatiser
-imposerait un ordre de démarrage rigide (base créée, puis administrateur,
-puis verrouillage) qu'un redéploiement ou un redémarrage de Passenger
-pourrait facilement inverser.
-
-Vérifier ensuite, dans cet ordre :
+Procédure complète, à exécuter une seule fois après le déploiement :
 
 ```bash
-# sans session — doit refuser
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5984/babines/_all_docs
-# → 401
+# 1. Démarrer le serveur (dans le répertoire server/)
+node app.js
 
-# avec session — doit accepter
-curl -s -c /tmp/babines-cookie -X POST http://127.0.0.1:5984/_session \
-  -H 'Content-Type: application/json' -d '{"name":"<NOM>","password":"<MOTDEPASSE>"}'
-curl -s -b /tmp/babines-cookie -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5984/babines/_all_docs
-# → 200
+# 2. Générer un mot de passe long, jamais versionné
+node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
 
-# _config, sans session — doit refuser (verifie que la protection admin
-# elle-meme n'a pas ete cassee par ce qui precede)
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:5984/_config
-# → 401
+# 3. Lancer le script avec les identifiants en variables d'environnement
+#    (jamais dans un fichier, jamais affichés par le script)
+BABINES_ADMIN=<NOM> BABINES_ADMIN_PASSWORD=<MOTDEPASSE> node setup.js
+
+# 4. Se connecter depuis la SPA avec ces mêmes identifiants
 ```
+
+`setup.js` n'est **délibérément pas appelé depuis `app.js`** au démarrage :
+activer ce verrouillage avant qu'un compte existe est exactement le
+scénario qui bloque le serveur sans recours, la raison qui a fait écarter
+l'automatisation depuis le début de cette tâche.

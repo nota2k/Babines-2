@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import AppHeader from '@/components/AppHeader.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import FilterBar from '@/components/FilterBar.vue'
@@ -10,7 +10,7 @@ import SidePastilles from '@/components/SidePastilles.vue'
 import SortBar from '@/components/SortBar.vue'
 import SyncIndicator from '@/components/SyncIndicator.vue'
 import LoginPanel from '@/components/LoginPanel.vue'
-import { currentSession, restoreSession } from '@/services/session.js'
+import { currentSession, restoreSession, closeSession } from '@/services/session.js'
 import { useLibraryStore } from '@/stores/library.js'
 import { useImportStore } from '@/stores/import.js'
 
@@ -23,6 +23,20 @@ function connecte(ouverte) {
   session.value = ouverte
   library.startReplication?.()
 }
+
+// Un cookie expiré côté serveur (redémarrage, secret de session tourné) ne
+// se remarque qu'à la prochaine tentative de réplication : sans ce watcher,
+// l'indicateur resterait bloqué sur « erreur d'authentification » et rien
+// ne ramènerait l'écran de connexion tout seul.
+watch(
+  () => library.syncStatus,
+  (status) => {
+    if (status === 'auth-error' && session.value) {
+      session.value = null
+      closeSession()
+    }
+  },
+)
 
 // import.meta n'est pas accessible depuis le template : sans URL de
 // synchronisation, l'application est en local pur et proposer une connexion
@@ -40,9 +54,9 @@ onMounted(() => {
   window.addEventListener('online', resolveOnReconnect)
 
   // Le cookie de session survit au rechargement, pas cette vue : sans cette
-  // verification, l'ecran de connexion reapparaitrait devant un utilisateur
-  // deja authentifie. La replication elle-meme est deja relancee par
-  // main.js ; ici on ne fait que rafraichir l'affichage.
+  // vérification, l'écran de connexion réapparaîtrait devant un utilisateur
+  // déjà authentifié. La réplication elle-même est déjà relancée par
+  // main.js ; ici on ne fait que rafraîchir l'affichage.
   restoreSession().then((restaure) => {
     if (restaure) session.value = restaure
   })

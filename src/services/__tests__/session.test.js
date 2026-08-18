@@ -103,7 +103,7 @@ describe('closeSession', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Failed to fetch')))
 
     // Ne pas pouvoir joindre le serveur ne doit pas laisser l'utilisateur
-    // coince dans un etat « connecte » qu'il ne peut plus quitter.
+    // coincé dans un état « connecté » qu'il ne peut plus quitter.
     await closeSession()
     expect(currentSession()).toBeNull()
   })

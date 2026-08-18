@@ -14,8 +14,8 @@ async function connecter() {
   message.value = ''
   try {
     const session = await openSession({ name: name.value, password: password.value })
-    // Le mot de passe ne survit pas a la connexion : le cookie porte desormais
-    // la preuve, le garder en memoire n'apporterait rien.
+    // Le mot de passe ne survit pas à la connexion : le cookie porte désormais
+    // la preuve, le garder en mémoire n'apporterait rien.
     password.value = ''
     emit('connecte', session)
   } catch (err) {
