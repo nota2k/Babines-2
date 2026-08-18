@@ -218,7 +218,13 @@ export function fromYoutubePlaylist(raw) {
 }
 
 export function fromYoutubeItem(raw) {
-  const externalId = raw.videoId || raw.contentDetails?.videoId || null
+  // L'identifiant de vidéo peut vivre à trois endroits selon la configuration du
+  // nœud n8n : aplati par un « Edit Fields », sous contentDetails, ou sous
+  // snippet.resourceId quand seule la partie `snippet` est demandée. Une case
+  // décochée dans une interface tierce ne doit pas vider silencieusement les
+  // identifiants de toute une playlist.
+  const externalId =
+    raw.videoId || raw.contentDetails?.videoId || raw.snippet?.resourceId?.videoId || null
   return {
     externalId,
     // Le titre reste brut : c'est splitYoutubeTitle, dans toTrackDoc, qui en

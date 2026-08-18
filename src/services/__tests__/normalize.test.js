@@ -361,6 +361,71 @@ describe('adaptateurs YouTube', () => {
     })
   })
 
+  it('lit un élément au format API avec contentDetails et snippet', () => {
+    expect(
+      fromYoutubeItem({
+        contentDetails: { videoId: 'UBS4Gi1y_nc' },
+        snippet: { title: 'Aphex Twin - Windowlicker (Official Video)' },
+      }),
+    ).toEqual({
+      externalId: 'UBS4Gi1y_nc',
+      title: 'Aphex Twin - Windowlicker (Official Video)',
+      artist: '',
+      album: '',
+      addedAt: null,
+      url: 'https://www.youtube.com/watch?v=UBS4Gi1y_nc',
+    })
+  })
+
+  it('lit un élément au format API avec seulement snippet (part sans contentDetails)', () => {
+    // Cas du diagnostic en cours côté n8n : si le nœud YouTube ne demande que
+    // `part: snippet`, l'identifiant vit sous snippet.resourceId.videoId.
+    expect(
+      fromYoutubeItem({
+        snippet: {
+          title: 'Aphex Twin - Windowlicker (Official Video)',
+          resourceId: { kind: 'youtube#video', videoId: 'UBS4Gi1y_nc' },
+        },
+      }),
+    ).toEqual({
+      externalId: 'UBS4Gi1y_nc',
+      title: 'Aphex Twin - Windowlicker (Official Video)',
+      artist: '',
+      album: '',
+      addedAt: null,
+      url: 'https://www.youtube.com/watch?v=UBS4Gi1y_nc',
+    })
+  })
+
+  it('les trois formes produisent le même externalId', () => {
+    const forme1 = fromYoutubeItem({
+      playlistId: 'PL123',
+      videoId: 'UBS4Gi1y_nc',
+      title: 'Aphex Twin - Windowlicker (Official Video)',
+      description: '…',
+      thumbnail_url: 'https://i.ytimg.com/vi/UBS4Gi1y_nc/default.jpg',
+    })
+    const forme2 = fromYoutubeItem({
+      contentDetails: { videoId: 'UBS4Gi1y_nc' },
+      snippet: { title: 'Aphex Twin - Windowlicker (Official Video)' },
+    })
+    const forme3 = fromYoutubeItem({
+      snippet: {
+        title: 'Aphex Twin - Windowlicker (Official Video)',
+        resourceId: { kind: 'youtube#video', videoId: 'UBS4Gi1y_nc' },
+      },
+    })
+    expect(forme1.externalId).toBe('UBS4Gi1y_nc')
+    expect(forme2.externalId).toBe('UBS4Gi1y_nc')
+    expect(forme3.externalId).toBe('UBS4Gi1y_nc')
+  })
+
+  it('un élément sans identifiant reconnaissable donne externalId null sans lever d’exception', () => {
+    expect(() => fromYoutubeItem({ snippet: { title: 'Sans identifiant' } })).not.toThrow()
+    expect(fromYoutubeItem({ snippet: { title: 'Sans identifiant' } }).externalId).toBeNull()
+    expect(fromYoutubeItem({}).externalId).toBeNull()
+  })
+
   it('lit une playlist au format de l’API YouTube', () => {
     expect(
       fromYoutubePlaylist({
