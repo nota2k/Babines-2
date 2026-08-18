@@ -34,7 +34,12 @@ export default defineConfig({
         icons: [
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          {
+            src: '/icon-maskable-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
         ],
         // Android profite du partage direct depuis Spotify ou YouTube.
         // iOS ignore silencieusement cette clé : aucun code mort, le coller-coller
@@ -47,6 +52,18 @@ export default defineConfig({
       },
     }),
   ],
+  server: {
+    proxy: {
+      // Fait de /db une URL de meme origine en developpement, comme elle le
+      // sera en production. Sans ca, il faudrait des en-tetes CORS puis un
+      // cookie tiers pour la session.
+      '/db': {
+        target: process.env.BABINES_SERVER_URL || 'http://127.0.0.1:5984',
+        changeOrigin: true,
+        rewrite: (chemin) => chemin.replace(/^\/db/, ''),
+      },
+    },
+  },
   define: {
     global: {},
   },
@@ -56,7 +73,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      events: 'events/'
+      events: 'events/',
     },
   },
   test: {
