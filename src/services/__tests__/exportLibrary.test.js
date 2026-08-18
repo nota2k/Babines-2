@@ -69,6 +69,37 @@ describe('buildExport', () => {
   })
 })
 
+describe('buildExport — rien ne doit disparaître', () => {
+  const inclassable = {
+    _id: 'vieux-document-non-migre',
+    _rev: '1-zzz',
+    title: 'Un titre resté à l’ancien format',
+    artist: 'Inconnu',
+  }
+
+  it('recueille les entrées sans type reconnu au lieu de les perdre', () => {
+    const payload = buildExport([track, artist, inclassable], 'library', AT)
+    expect(payload.tracks).toHaveLength(1)
+    expect(payload.artists).toHaveLength(1)
+    expect(payload.others).toHaveLength(1)
+    expect(payload.others[0].id).toBe('vieux-document-non-migre')
+  })
+
+  it('n’exporte jamais moins d’entrées qu’il n’en a reçu', () => {
+    const entries = [track, artist, inclassable]
+    const payload = buildExport(entries, 'library', AT)
+    expect(payload.tracks.length + payload.artists.length + payload.others.length).toBe(entries.length)
+  })
+
+  it('expose un tableau others vide quand tout est classé', () => {
+    expect(buildExport([track, artist], 'library', AT).others).toEqual([])
+  })
+
+  it('retire aussi _rev des entrées inclassables', () => {
+    expect(JSON.stringify(buildExport([inclassable], 'library', AT))).not.toContain('_rev')
+  })
+})
+
 describe('exportFilename', () => {
   it('nomme un export global', () => {
     expect(exportFilename('library', AT)).toBe('babines-2026-08-18.json')

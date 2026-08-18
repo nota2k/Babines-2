@@ -12,13 +12,15 @@ export function toExportEntry(doc) {
 
 export function buildExport(entries, scope = 'library', exportedAt = new Date().toISOString()) {
   const exported = entries.map(toExportEntry)
-  return {
-    version: EXPORT_VERSION,
-    exportedAt,
-    scope,
-    tracks: exported.filter((e) => e.type === 'track'),
-    artists: exported.filter((e) => e.type === 'artist'),
-  }
+  const tracks = exported.filter((e) => e.type === 'track')
+  const artists = exported.filter((e) => e.type === 'artist')
+  // Tout ce qui n'entre dans aucune catégorie connue est conservé ici plutôt que
+  // perdu : la migration laisse volontairement en base les anciens documents
+  // qu'elle ne sait pas classer, et un export censé contenir toute la musique ne
+  // doit pas les faire disparaître en silence.
+  const others = exported.filter((e) => e.type !== 'track' && e.type !== 'artist')
+
+  return { version: EXPORT_VERSION, exportedAt, scope, tracks, artists, others }
 }
 
 const slug = (value) =>
