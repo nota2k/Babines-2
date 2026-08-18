@@ -14,7 +14,10 @@ function select(name) {
 
 <template>
   <nav class="playlist-nav" aria-label="Playlists">
-    <p class="label">Playlists</p>
+    <div class="label-row">
+      <h2 class="label">Playlists</h2>
+      <span class="total">{{ library.playlists.length }}</span>
+    </div>
     <ul>
       <li>
         <button
@@ -46,13 +49,27 @@ function select(name) {
   flex: 1 1 220px;
 }
 
-.label {
+.label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6em;
   margin: 0 0 0.6em;
+}
+
+.label {
+  margin: 0;
   font-family: 'Space Grotesk', sans-serif;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  color: var(--encre-douce);
+}
+
+.total {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
   color: var(--encre-douce);
 }
 
