@@ -67,8 +67,9 @@ async function exportNow() {
 }
 
 .pastille {
-  width: 64px;
-  height: 64px;
+  /* Carré parfait quelle que soit la largeur disponible, jamais sous 120 px. */
+  min-width: 120px;
+  aspect-ratio: 1 / 1;
   border-radius: 100%;
   border: 1px solid var(--trait);
   background: var(--jaune);
@@ -80,9 +81,15 @@ async function exportNow() {
   overflow: hidden;
 }
 
-.pastille:hover .dog,
-.pastille:focus-visible .dog {
+/* Même signature que les deux autres pastilles : le chien s'agite toujours. */
+.dog {
   animation: helloDogs 0.8s infinite alternate-reverse ease-in-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dog {
+    animation: none;
+  }
 }
 
 @keyframes helloDogs {
@@ -95,7 +102,7 @@ async function exportNow() {
 }
 
 .dog {
-  width: 34px;
+  width: 76px;
   height: auto;
 }
 

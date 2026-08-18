@@ -47,8 +47,9 @@ a.item {
 }
 
 .pastille {
-  width: 64px;
-  height: 64px;
+  /* Carré parfait quelle que soit la largeur disponible, jamais sous 120 px. */
+  min-width: 120px;
+  aspect-ratio: 1 / 1;
   border-radius: 100%;
   border: 1px solid var(--trait);
   background: var(--jaune);
@@ -59,9 +60,17 @@ a.item {
   transition: background-color 0.15s linear;
 }
 
-a.item:hover .dog,
-a.item:focus-visible .dog {
+/* Les chiens s'agitent en permanence, pas seulement au survol : c'est la
+   signature du produit, héritée de la première version de Babines. */
+.dog {
   animation: helloDogs 0.8s infinite alternate-reverse ease-in-out both;
+}
+
+/* Un mouvement perpétuel se désactive pour qui demande moins d'animation. */
+@media (prefers-reduced-motion: reduce) {
+  .dog {
+    animation: none;
+  }
 }
 
 @keyframes helloDogs {
@@ -74,7 +83,7 @@ a.item:focus-visible .dog {
 }
 
 .dog {
-  width: 34px;
+  width: 76px;
   height: auto;
 }
 

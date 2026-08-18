@@ -85,6 +85,12 @@ main.library {
 
 .content {
   flex: 999 1 min(100%, 380px);
+  /* Sans cette ligne, un élément flex refuse de descendre sous la largeur
+     minimale de son contenu : le tableau de morceaux imposait alors plus de
+     500 px, et la colonne des pastilles basculait sous la liste dès que la
+     fenêtre passait sous ~1030 px. Les colonnes des lignes savent se tronquer,
+     autant les laisser faire. */
+  min-width: 0;
 }
 
 .list-card {
