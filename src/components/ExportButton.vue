@@ -21,7 +21,15 @@ async function exportNow() {
   const payload = buildExport(library.filtered, scope.value, now)
   try {
     await shareOrDownload(payload, exportFilename(scope.value, now))
-    feedback.value = `${payload.tracks.length} morceaux et ${payload.artists.length} artistes exportés.`
+    const parts = [
+      `${payload.tracks.length} morceaux`,
+      `${payload.artists.length} artistes`,
+    ]
+    // Les entrées d'un type inattendu (anciens documents non migrés) sont bien
+    // dans le fichier : les taire dans le message reviendrait à les faire
+    // disparaître là où on a justement tout fait pour qu'elles ne disparaissent pas.
+    if (payload.others.length) parts.push(`${payload.others.length} entrées non classées`)
+    feedback.value = `${parts.join(', ')} — exportés.`
   } catch (err) {
     feedback.value = `Export impossible : ${err.message}`
   }
@@ -33,7 +41,7 @@ async function exportNow() {
     <button type="button" @click="exportNow">
       Exporter {{ scope === 'library' ? 'toute la bibliothèque' : 'la sélection' }} ({{ library.filtered.length }})
     </button>
-    <span v-if="feedback" class="feedback">{{ feedback }}</span>
+    <span v-if="feedback" class="feedback" role="status">{{ feedback }}</span>
   </div>
 </template>
 
