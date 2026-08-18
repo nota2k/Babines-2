@@ -202,6 +202,27 @@ describe('duplicateGroups', () => {
   })
 })
 
+describe('syncLabel', () => {
+  it('traduit chaque état de réplication, le hors-ligne n’étant pas une erreur', () => {
+    const cases = {
+      idle: 'à jour',
+      pending: 'synchronisation…',
+      offline: 'hors ligne',
+      'auth-error': 'erreur d’authentification',
+      error: 'erreur de synchronisation',
+      'local-only': 'local uniquement',
+    }
+    for (const [status, label] of Object.entries(cases)) {
+      store.syncStatus = status
+      expect(store.syncLabel).toBe(label)
+    }
+  })
+
+  it('démarre en « local uniquement »', () => {
+    expect(useLibraryStore().syncStatus).toBe('local-only')
+  })
+})
+
 describe('displayTitle', () => {
   it('affiche le titre d’un morceau et le nom d’un artiste', () => {
     expect(displayTitle({ type: 'track', title: 'X' })).toBe('X')

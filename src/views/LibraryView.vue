@@ -4,6 +4,7 @@ import Header from '@/components/Header.vue'
 import FilterBar from '@/components/FilterBar.vue'
 import LibraryList from '@/components/LibraryList.vue'
 import QuickAdd from '@/components/QuickAdd.vue'
+import SyncIndicator from '@/components/SyncIndicator.vue'
 import { useLibraryStore } from '@/stores/library.js'
 import { useImportStore } from '@/stores/import.js'
 
@@ -35,6 +36,8 @@ onUnmounted(() => {
       <router-link :to="{ name: 'import' }">Sources</router-link>
       <router-link :to="{ name: 'duplicates' }">Doublons</router-link>
     </nav>
+
+    <SyncIndicator />
 
     <QuickAdd />
 

@@ -56,6 +56,16 @@ export const useLibraryStore = defineStore('library', {
     tags: (state) => uniqueSorted(state.entries.flatMap((e) => e.tags || [])),
     pendingEntries: (state) => state.entries.filter((e) => e.pending),
 
+    syncLabel: (state) =>
+      ({
+        idle: 'à jour',
+        pending: 'synchronisation…',
+        offline: 'hors ligne',
+        'auth-error': 'erreur d’authentification',
+        error: 'erreur de synchronisation',
+        'local-only': 'local uniquement',
+      })[state.syncStatus] || state.syncStatus,
+
     /**
      * Doublons *probables*, regroupés par matchKey. Rien n'est fusionné
      * automatiquement : la décision reste manuelle (décision 7 de la spec).
