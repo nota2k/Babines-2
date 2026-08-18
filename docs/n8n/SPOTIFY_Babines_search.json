@@ -1,0 +1,80 @@
+{
+  "name": "SPOTIFY_Babines/search",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "search/spotify",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*",
+          "responseHeaders": {
+            "entries": [
+              { "name": "Access-Control-Allow-Origin", "value": "*" }
+            ]
+          }
+        }
+      },
+      "id": "a2b3c4d5-0001-4f00-8a10-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [440, 420],
+      "webhookId": "7d2e5f10-3c48-4a92-b7d1-0e5a9c3b7742"
+    },
+    {
+      "parameters": {
+        "url": "https://api.spotify.com/v1/search",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "spotifyOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "q", "value": "={{ $json.query.q }}" },
+            { "name": "type", "value": "track" },
+            { "name": "limit", "value": "5" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a2b3c4d5-0002-4f00-8a10-000000000002",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 420],
+      "credentials": {
+        "spotifyOAuth2Api": { "id": "fOYFQF02KgLXOIeE", "name": "Spotify account" }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "access-control-allow-origin", "value": "*" }
+            ]
+          }
+        }
+      },
+      "id": "a2b3c4d5-0003-4f00-8a10-000000000003",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [920, 420]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": { "main": [[{ "node": "HTTP Request", "type": "main", "index": 0 }]] },
+    "HTTP Request": { "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]] }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "481c988b261a051a851b527d4445759b31890c2609461a4eb7afbb13f46709ee"
+  },
+  "tags": [
+    { "createdAt": "2025-12-18T06:15:08.263Z", "updatedAt": "2025-12-18T06:15:08.263Z", "id": "0JZNlMR2T6nkrqJS", "name": "Babines" }
+  ]
+}
