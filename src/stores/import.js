@@ -52,9 +52,14 @@ async function fetchJson(url) {
   return response.json()
 }
 
-/** Écrit une volée de morceaux en fusionnant avec l'existant. Renvoie le nombre traité. */
+/**
+ * Écrit une volée de morceaux en fusionnant avec l'existant.
+ * Renvoie { written, failed } — le nombre de documents réellement écrits, et les
+ * échecs signalés par PouchDB. Compter les intentions plutôt que les écritures
+ * ferait mentir le rapport d'import, ce que ce store existe précisément pour éviter.
+ */
 async function writeTracks(rawTracks, source, now = new Date().toISOString()) {
-  if (!rawTracks.length) return 0
+  if (!rawTracks.length) return { written: 0, failed: [] }
   const db = getDb()
   const adapt = ADAPTERS[source.platform].track
   const incoming = rawTracks.map((raw) => toTrackDoc(adapt(raw), source, now))
@@ -62,14 +67,31 @@ async function writeTracks(rawTracks, source, now = new Date().toISOString()) {
   const existing = await db.allDocs({ keys: incoming.map((d) => d._id), include_docs: true })
   const byId = new Map(existing.rows.filter((r) => r.doc).map((r) => [r.id, r.doc]))
 
-  const toWrite = []
+  // Une playlist peut contenir deux fois le même morceau : on fusionne dans la
+  // volée plutôt que d'envoyer deux documents de même _id, ce qui produirait un
+  // conflit silencieux.
+  const toWrite = new Map()
   for (const doc of incoming) {
-    const merged = mergeTrackDoc(byId.get(doc._id) || null, doc, now)
-    if (merged !== byId.get(doc._id)) toWrite.push(merged)
+    const target = toWrite.get(doc._id) || byId.get(doc._id) || null
+    const merged = mergeTrackDoc(target, doc, now)
+    if (merged !== byId.get(doc._id)) toWrite.set(doc._id, merged)
   }
 
-  if (toWrite.length) await db.bulkDocs(toWrite)
-  return incoming.length
+  if (toWrite.size === 0) return { written: 0, failed: [] }
+
+  const results = await db.bulkDocs([...toWrite.values()])
+  return {
+    written: results.filter((r) => r.ok).length,
+    failed: results.filter((r) => r.error).map((r) => ({ id: r.id, reason: r.message || r.name })),
+  }
+}
+
+/** Récupère et écrit les morceaux d'une playlist (ou des favoris). Renvoie { written, failed }. */
+async function importPlaylistTracks(platform, { playlistId = null, playlistName = null, liked = false } = {}) {
+  const endpoints = ENDPOINTS[platform]
+  const url = liked ? endpoints.liked() : endpoints.tracks(playlistId)
+  const tracks = await fetchJson(url)
+  return writeTracks(tracks, { platform, playlistId, playlistName })
 }
 
 export const useImportStore = defineStore('import', {
@@ -107,11 +129,9 @@ export const useImportStore = defineStore('import', {
       return raw.map(ADAPTERS[platform].playlist)
     },
 
-    async importPlaylist(platform, { playlistId = null, playlistName = null, liked = false } = {}) {
-      const endpoints = ENDPOINTS[platform]
-      const url = liked ? endpoints.liked() : endpoints.tracks(playlistId)
-      const tracks = await fetchJson(url)
-      return writeTracks(tracks, { platform, playlistId, playlistName })
+    async importPlaylist(platform, opts = {}) {
+      const { written } = await importPlaylistTracks(platform, opts)
+      return written
     },
 
     /** Importe toutes les playlists d'une plateforme, plus les favoris si la plateforme en expose. */
@@ -119,6 +139,7 @@ export const useImportStore = defineStore('import', {
       const job = this.startJob(platform, `Import ${platform}`)
       const failures = []
       let imported = 0
+      let writeFailures = 0
 
       let playlists
       try {
@@ -130,10 +151,12 @@ export const useImportStore = defineStore('import', {
 
       for (const playlist of playlists) {
         try {
-          imported += await this.importPlaylist(platform, {
+          const result = await importPlaylistTracks(platform, {
             playlistId: playlist.id,
             playlistName: playlist.name,
           })
+          imported += result.written
+          writeFailures += result.failed.length
         } catch (err) {
           failures.push(`${playlist.name} (${err.status})`)
         }
@@ -141,7 +164,9 @@ export const useImportStore = defineStore('import', {
 
       if (ENDPOINTS[platform].liked) {
         try {
-          imported += await this.importPlaylist(platform, { playlistName: 'Titres likés', liked: true })
+          const result = await importPlaylistTracks(platform, { playlistName: 'Titres likés', liked: true })
+          imported += result.written
+          writeFailures += result.failed.length
         } catch (err) {
           failures.push(`Titres likés (${err.status})`)
         }
@@ -149,12 +174,16 @@ export const useImportStore = defineStore('import', {
 
       await useLibraryStore().load()
 
+      const notes = []
+      if (failures.length) notes.push(`échec sur : ${failures.join(', ')}`)
+      if (writeFailures) notes.push(`${writeFailures} échec(s) d'écriture en base`)
+
       this.finishJob(job, {
         imported,
-        failed: failures.length,
-        status: failures.length ? 'partial' : 'ok',
-        message: failures.length
-          ? `${imported} morceaux importés, échec sur : ${failures.join(', ')}`
+        failed: failures.length + writeFailures,
+        status: notes.length ? 'partial' : 'ok',
+        message: notes.length
+          ? `${imported} morceaux importés, ${notes.join(', ')}`
           : `${imported} morceaux importés`,
       })
       return job
@@ -168,6 +197,8 @@ export const useImportStore = defineStore('import', {
       const pending = all.rows.map((r) => r.doc).filter((d) => d && d.pending)
 
       let resolved = 0
+      let failures = 0
+      let lastStatus = null
       const now = new Date().toISOString()
 
       for (const doc of pending) {
@@ -185,13 +216,29 @@ export const useImportStore = defineStore('import', {
             await db.put(merged)
             resolved += 1
           }
-        } catch {
+        } catch (err) {
           // L'entrée reste « en attente » : elle sera retentée au prochain retour du réseau.
-          // Rien de ce que l'utilisateur a écrit n'est touché.
+          // Rien de ce que l'utilisateur a écrit n'est touché. Le silence est voulu ici,
+          // par entrée — mais le silence global (aucune trace nulle part) ne l'est pas :
+          // voir le job consigné ci-dessous quand des échecs se produisent.
+          failures += 1
+          lastStatus = err.status ?? 0
         }
       }
 
       if (resolved) await library.load()
+
+      if (failures > 0) {
+        const job = this.startJob('resolve', 'Résolution des entrées en attente')
+        this.finishJob(job, {
+          imported: resolved,
+          failed: failures,
+          status: resolved > 0 ? 'partial' : 'error',
+          httpStatus: lastStatus,
+          message: `${resolved} entrée(s) complétée(s), ${failures} en échec`,
+        })
+      }
+
       return resolved
     },
   },

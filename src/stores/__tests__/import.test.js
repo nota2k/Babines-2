@@ -26,6 +26,21 @@ const YOUTUBE_ITEMS = [
   { playlistId: 'PL_Y', videoId: 'UBS4Gi1y_nc', title: 'Aphex Twin - Windowlicker (Official Video)', description: '', thumbnail_url: '' },
 ]
 
+const pendingDoc = (externalId, note = '') => ({
+  _id: `track:youtube:${externalId}`,
+  type: 'track',
+  title: '',
+  artist: '',
+  album: '',
+  matchKey: '',
+  pending: true,
+  sources: [{ platform: 'youtube', playlistId: null, playlistName: null, externalId, addedAt: null, url: `https://youtu.be/${externalId}`, rawTitle: null }],
+  note,
+  tags: [],
+  createdAt: '2026-08-18T14:00:00Z',
+  updatedAt: '2026-08-18T14:00:00Z',
+})
+
 beforeEach(() => {
   setActivePinia(createPinia())
   setDb(createDb(`import-db-${counter++}`, { adapter: 'memory' }))
@@ -162,21 +177,6 @@ describe('erreurs — jamais de liste vide silencieuse', () => {
 })
 
 describe('resolvePending', () => {
-  const pendingDoc = (externalId, note = '') => ({
-    _id: `track:youtube:${externalId}`,
-    type: 'track',
-    title: '',
-    artist: '',
-    album: '',
-    matchKey: '',
-    pending: true,
-    sources: [{ platform: 'youtube', playlistId: null, playlistName: null, externalId, addedAt: null, url: `https://youtu.be/${externalId}`, rawTitle: null }],
-    note,
-    tags: [],
-    createdAt: '2026-08-18T14:00:00Z',
-    updatedAt: '2026-08-18T14:00:00Z',
-  })
-
   it('enrichit les entrées capturées hors ligne', async () => {
     const db = getDb()
     await db.put(pendingDoc('UBS4Gi1y_nc', 'entendu en soirée'))
@@ -205,5 +205,76 @@ describe('resolvePending', () => {
     expect(resolved).toBe(0)
     expect(doc.pending).toBe(true)
     expect(doc.note).toBe('à réécouter')
+  })
+})
+
+describe('écritures vérifiées — le compteur ne doit pas mentir', () => {
+  it('ne compte que les morceaux réellement écrits', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(SPOTIFY_TRACKS)))
+    const db = getDb()
+    const realBulkDocs = db.bulkDocs.bind(db)
+    db.bulkDocs = async (docs) => {
+      const results = await realBulkDocs(docs)
+      // Le premier document échoue, comme le ferait un conflit de révision.
+      return results.map((r, i) => (i === 0 ? { id: docs[0]._id, error: true, name: 'conflict', message: 'simulé' } : r))
+    }
+
+    const written = await useImportStore().importPlaylist('spotify', { playlistId: 'PL_A', playlistName: 'BAT BEAT' })
+    expect(written).toBe(1)
+  })
+
+  it('fait remonter un échec d’écriture dans le job, pas seulement dans le décompte', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url) =>
+      url.includes('/getplaylist') ? jsonResponse(SPOTIFY_PLAYLISTS) : jsonResponse(SPOTIFY_TRACKS),
+    ))
+    const db = getDb()
+    db.bulkDocs = async (docs) => docs.map((d) => ({ id: d._id, error: true, name: 'conflict', message: 'simulé' }))
+
+    const store = useImportStore()
+    await store.importPlatform('spotify')
+
+    const job = store.jobs.at(-1)
+    expect(job.status).toBe('partial')
+    expect(job.imported).toBe(0)
+    expect(job.message).toMatch(/écriture/i)
+  })
+
+  it('ne se contredit pas quand la même piste apparaît deux fois dans une volée', async () => {
+    const doubled = [SPOTIFY_TRACKS[0], SPOTIFY_TRACKS[0]]
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(doubled)))
+
+    const written = await useImportStore().importPlaylist('spotify', { playlistId: 'PL_A', playlistName: 'BAT BEAT' })
+
+    // Un seul document, une seule écriture, aucun conflit.
+    expect(written).toBe(1)
+    const doc = await getDb().get('track:spotify:X1')
+    expect(doc.sources).toHaveLength(1)
+  })
+})
+
+describe('resolvePending — le silence global disparaît', () => {
+  it('consigne un job quand des résolutions échouent', async () => {
+    const db = getDb()
+    await db.put(pendingDoc('ZZZ', 'à réécouter'))
+    vi.stubGlobal('fetch', vi.fn(async () => errorResponse(404)))
+
+    const store = useImportStore()
+    const resolved = await store.resolvePending()
+
+    expect(resolved).toBe(0)
+    const job = store.jobs.at(-1)
+    expect(job.status).toBe('error')
+    expect(job.httpStatus).toBe(404)
+    expect((await db.get('track:youtube:ZZZ')).pending).toBe(true)
+  })
+
+  it('ne consigne aucun job quand tout se résout', async () => {
+    const db = getDb()
+    await db.put(pendingDoc('UBS4Gi1y_nc'))
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({ videoId: 'UBS4Gi1y_nc', title: 'Aphex Twin - Windowlicker' })))
+
+    const store = useImportStore()
+    await store.resolvePending()
+    expect(store.jobs).toHaveLength(0)
   })
 })
