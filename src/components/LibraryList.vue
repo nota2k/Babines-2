@@ -16,7 +16,7 @@ defineProps({
   <p v-else-if="!entries.length" class="empty">Aucune entrée ne correspond à ces filtres.</p>
 
   <ul v-else class="entries">
-    <EntryRow v-for="entry in entries" :key="entry._id" :entry="entry" />
+    <EntryRow v-for="(entry, index) in entries" :key="entry._id" :entry="entry" :index="index" />
   </ul>
 </template>
 

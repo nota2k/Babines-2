@@ -2,16 +2,23 @@
 import { computed } from 'vue'
 import { displayTitle } from '@/stores/library.js'
 
-const props = defineProps({ entry: { type: Object, required: true } })
+const props = defineProps({
+  entry: { type: Object, required: true },
+  index: { type: Number, default: 0 },
+})
 
 const title = computed(() => displayTitle(props.entry))
 const platforms = computed(() => [...new Set((props.entry.sources || []).map((s) => s.platform))])
 const excerpt = computed(() => (props.entry.note || '').split('\n')[0].slice(0, 90))
+// Rang d'affichage, pas une donnée : recalculé depuis la position dans la
+// liste affichée, il suit donc filtres et tri sans lien avec entry._id.
+const rank = computed(() => String(props.index + 1).padStart(2, '0'))
 </script>
 
 <template>
   <li class="row">
     <router-link :to="{ name: 'entry', params: { id: entry._id } }">
+      <span class="rank" aria-hidden="true">{{ rank }}</span>
       <span class="badge" :class="entry.type">{{ entry.type === 'artist' ? 'artiste' : 'morceau' }}</span>
       <span class="title">{{ title }}</span>
       <span v-if="entry.artist" class="artist">{{ entry.artist }}</span>
@@ -43,6 +50,14 @@ const excerpt = computed(() => (props.entry.note || '').split('\n')[0].slice(0, 
 
 .row a:hover {
   background: var(--jaune);
+}
+
+.rank {
+  flex: 0 0 auto;
+  width: 26px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--encre-tres-douce);
 }
 
 .title {
