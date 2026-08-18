@@ -19,15 +19,20 @@ const rank = computed(() => String(props.index + 1).padStart(2, '0'))
   <li class="row">
     <router-link :to="{ name: 'entry', params: { id: entry._id } }">
       <span class="rank" aria-hidden="true">{{ rank }}</span>
-      <span class="badge" :class="entry.type">{{ entry.type === 'artist' ? 'artiste' : 'morceau' }}</span>
+      <!-- Colonne toujours rendue pour réserver sa place, invisible quand
+           l'entrée n'attend pas d'enrichissement : évite qu'elle décale
+           les colonnes suivantes selon les lignes. -->
+      <span class="pending" :class="{ 'pending--hidden': !entry.pending }" title="En attente d’enrichissement">⏳</span>
+      <span class="badge" :class="`badge--${entry.type}`">{{ entry.type === 'artist' ? 'artiste' : 'morceau' }}</span>
       <span class="title">{{ title }}</span>
-      <span v-if="entry.artist" class="artist">{{ entry.artist }}</span>
-      <span v-if="entry.pending" class="pending" title="En attente d’enrichissement">⏳</span>
+      <span class="artist">{{ entry.artist }}</span>
+      <span class="note">{{ excerpt }}</span>
+      <span class="tags">
+        <span v-for="tag in entry.tags" :key="tag" class="tag">{{ tag }}</span>
+      </span>
       <span class="platforms">
         <span v-for="platform in platforms" :key="platform" class="platform">{{ platform }}</span>
       </span>
-      <span v-if="excerpt" class="note">{{ excerpt }}</span>
-      <span v-for="tag in entry.tags" :key="tag" class="tag">{{ tag }}</span>
     </router-link>
   </li>
 </template>
@@ -39,7 +44,6 @@ const rank = computed(() => String(props.index + 1).padStart(2, '0'))
 
 .row a {
   display: flex;
-  flex-wrap: wrap;
   align-items: baseline;
   gap: 0.6em;
   padding: 0.8em 0.7em;
@@ -60,13 +64,55 @@ const rank = computed(() => String(props.index + 1).padStart(2, '0'))
   color: var(--encre-tres-douce);
 }
 
+.pending {
+  flex: 0 0 auto;
+  width: 16px;
+  text-align: center;
+}
+
+.pending--hidden {
+  visibility: hidden;
+}
+
+.badge {
+  flex: 0 0 auto;
+  width: 74px;
+  text-align: center;
+}
+
+.title,
+.artist,
+.note {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .title {
+  flex: 3 1 0;
   font-weight: 700;
 }
 
 .artist,
 .note {
+  flex: 2 1 0;
   color: var(--encre-douce);
+}
+
+.tags {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4em;
+}
+
+.platforms {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4em;
+  margin-left: auto;
 }
 
 .badge,
@@ -82,7 +128,7 @@ const rank = computed(() => String(props.index + 1).padStart(2, '0'))
   color: var(--encre-douce);
 }
 
-.badge.artist {
+.badge--artist {
   background: var(--jaune);
   color: var(--encre);
 }
@@ -90,7 +136,35 @@ const rank = computed(() => String(props.index + 1).padStart(2, '0'))
 @media screen and (max-width: 768px) {
   .row a {
     flex-direction: column;
+    align-items: stretch;
     gap: 0.2em;
+  }
+
+  .badge {
+    align-self: flex-start;
+  }
+
+  .title,
+  .artist,
+  .note {
+    flex: none;
+    width: auto;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .artist:empty,
+  .note:empty {
+    display: none;
+  }
+
+  .tags:empty {
+    display: none;
+  }
+
+  .platforms {
+    margin-left: 0;
   }
 }
 </style>
