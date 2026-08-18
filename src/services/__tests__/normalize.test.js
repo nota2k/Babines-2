@@ -380,6 +380,25 @@ describe('adaptateurs YouTube', () => {
   it('tolère une playlist déjà aplatie par n8n', () => {
     expect(fromYoutubePlaylist({ id: 'PL9', name: 'Déjà plate' }).name).toBe('Déjà plate')
   })
+
+  it('lit la forme réellement émise par le workflow n8n', () => {
+    // Relevé sur docs/n8n/YT_Babines_getAllPlaylists.json, nœud « Edit Fields » :
+    // {title, itemCount, id, thumbnail} — ni snippet, ni contentDetails.
+    expect(
+      fromYoutubePlaylist({
+        title: 'Trouvailles',
+        itemCount: 42,
+        id: 'PL123',
+        thumbnail: 'https://i.ytimg.com/vi/x/default.jpg',
+      }),
+    ).toEqual({
+      id: 'PL123',
+      name: 'Trouvailles',
+      description: '',
+      trackCount: 42,
+      url: 'https://www.youtube.com/playlist?list=PL123',
+    })
+  })
 })
 
 describe('adaptateurs Deezer', () => {

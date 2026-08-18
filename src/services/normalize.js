@@ -207,9 +207,12 @@ export function fromYoutubePlaylist(raw) {
   const id = raw.id || raw.playlistId || null
   return {
     id,
-    name: raw.snippet?.title ?? raw.name ?? '',
+    // Trois formes tolérées : l'API YouTube brute (snippet/contentDetails), la
+    // forme cible plate (name/trackCount), et celle que le workflow émet
+    // aujourd'hui (title/itemCount — voir docs/n8n/YT_Babines_getAllPlaylists.json).
+    name: raw.snippet?.title ?? raw.name ?? raw.title ?? '',
     description: raw.snippet?.description ?? raw.description ?? '',
-    trackCount: raw.contentDetails?.itemCount ?? raw.trackCount ?? null,
+    trackCount: raw.contentDetails?.itemCount ?? raw.trackCount ?? raw.itemCount ?? null,
     url: id ? `https://www.youtube.com/playlist?list=${id}` : null,
   }
 }
