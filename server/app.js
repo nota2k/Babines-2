@@ -26,6 +26,7 @@ app.use(
   '/',
   expressPouchDB(BabinesPouch, {
     configPath: path.join(DATA_DIR, 'config.json'),
+    overrideMode: { include: ['routes/authentication', 'routes/authorization'] },
   }),
 )
 

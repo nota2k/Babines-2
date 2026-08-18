@@ -10,7 +10,8 @@ export function displayTitle(entry) {
   return entry.sources?.[0]?.url || ''
 }
 
-const uniqueSorted = (values) => [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b))
+const uniqueSorted = (values) =>
+  [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b))
 
 export const useLibraryStore = defineStore('library', {
   state: () => ({
@@ -29,6 +30,9 @@ export const useLibraryStore = defineStore('library', {
     sortBy: 'updatedAt',
     sortAsc: false,
     syncStatus: 'local-only',
+    // Injectee au demarrage : l'ecran de connexion doit pouvoir lancer la
+    // replication sans que les composants connaissent PouchDB.
+    startReplication: null,
   }),
 
   getters: {
@@ -36,8 +40,10 @@ export const useLibraryStore = defineStore('library', {
       const q = state.query.trim().toLowerCase()
       const list = state.entries.filter((entry) => {
         if (state.entryType && entry.type !== state.entryType) return false
-        if (state.platform && !(entry.sources || []).some((s) => s.platform === state.platform)) return false
-        if (state.playlist && !(entry.sources || []).some((s) => s.playlistName === state.playlist)) return false
+        if (state.platform && !(entry.sources || []).some((s) => s.platform === state.platform))
+          return false
+        if (state.playlist && !(entry.sources || []).some((s) => s.playlistName === state.playlist))
+          return false
         if (state.tag && !(entry.tags || []).includes(state.tag)) return false
         if (q) {
           const haystack = [entry.title, entry.artist, entry.name, entry.album, entry.note]
@@ -55,7 +61,8 @@ export const useLibraryStore = defineStore('library', {
       return [...list].sort((a, b) => value(a).localeCompare(value(b)) * direction)
     },
 
-    playlists: (state) => uniqueSorted(state.entries.flatMap((e) => (e.sources || []).map((s) => s.playlistName))),
+    playlists: (state) =>
+      uniqueSorted(state.entries.flatMap((e) => (e.sources || []).map((s) => s.playlistName))),
 
     /**
      * Décompte d'entrées par playlist, pour la colonne de navigation. Une
@@ -70,7 +77,8 @@ export const useLibraryStore = defineStore('library', {
       }
       return counts
     },
-    platforms: (state) => uniqueSorted(state.entries.flatMap((e) => (e.sources || []).map((s) => s.platform))),
+    platforms: (state) =>
+      uniqueSorted(state.entries.flatMap((e) => (e.sources || []).map((s) => s.platform))),
 
     /**
      * Playlists disponibles par plateforme, pour le sélecteur de la colonne
@@ -217,9 +225,7 @@ export const useLibraryStore = defineStore('library', {
         const keep = await db.get(keepId)
         const drop = await db.get(dropId)
 
-        const notes = [keep.note, drop.note]
-          .map((n) => (n || '').trim())
-          .filter(Boolean)
+        const notes = [keep.note, drop.note].map((n) => (n || '').trim()).filter(Boolean)
         // Une fusion peut être reprise si la suppression du doublon a échoué :
         // sans dédoublonnage, la note déjà absorbée serait réécrite à chaque essai.
         const noteFusionnee = [...new Set(notes)].join('\n')
