@@ -46,6 +46,10 @@ async function bootstrap() {
       if (status === 'idle' && previous === 'pending') library.load()
     },
   })
+
+  // Safari purge IndexedDB après ~7 jours sans ouverture. La demande peut être
+  // refusée ; ce n'est pas grave, CouchDB rapatrie les données à la réouverture.
+  navigator.storage?.persist?.().catch(() => {})
 }
 
 bootstrap()
