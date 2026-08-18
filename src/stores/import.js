@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia'
 import { getDb } from '@/services/db.js'
-import { ADAPTERS, toTrackDoc } from '@/services/normalize.js'
+import { ADAPTERS, toTrackDoc, fromYoutubeSearchResults } from '@/services/normalize.js'
 import { mergeTrackDoc } from '@/services/merge.js'
 import { useLibraryStore } from '@/stores/library.js'
 
 // Petit helper d'accord : « 1 morceau » mais « 2 morceaux ».
-const pluriel = (n, singulier, plurielMot = singulier + 's') => `${n} ${n > 1 ? plurielMot : singulier}`
+const pluriel = (n, singulier, plurielMot = singulier + 's') =>
+  `${n} ${n > 1 ? plurielMot : singulier}`
 
 export class ImportError extends Error {
   constructor(message, { status = 0, url = '' } = {}) {
@@ -36,6 +37,12 @@ export const ENDPOINTS = {
     tracks: (playlistId) => `${base()}/youtube/items?playlistId=${playlistId}`,
     liked: null,
     resolve: (id) => `${base()}/resolve/youtube?id=${id}`,
+    // Seuls chemins sortants du client : la recherche de candidats et l'ajout à
+    // une playlist. Ils construisent leur chaîne de requête ici, comme tracks(),
+    // pour que rien de la forme des URLs n8n ne fuite dans les composants.
+    search: (query) => `${base()}/searchvideos?q=${encodeURIComponent(query)}`,
+    addToPlaylist: (videoId, playlistId) =>
+      `${base()}/addvideotoyoutube?id=${encodeURIComponent(videoId)}&playlistId=${encodeURIComponent(playlistId)}`,
   },
   deezer: {
     playlists: () => `${base()}/deezer/playlists`,
@@ -45,10 +52,12 @@ export const ENDPOINTS = {
   },
 }
 
-async function fetchJson(url) {
+async function fetchJson(url, { method = 'GET' } = {}) {
   let response
   try {
-    response = await fetch(url)
+    // On branche sur l'appel, pas sur l'argument : `fetch(url, undefined)` passe
+    // deux arguments, ce qu'une assertion `toHaveBeenCalledWith(url)` rejette.
+    response = method === 'GET' ? await fetch(url) : await fetch(url, { method })
   } catch (err) {
     throw new ImportError(`Réseau indisponible (${err.message})`, { status: 0, url })
   }
@@ -95,7 +104,10 @@ async function writeTracks(rawTracks, source, now = new Date().toISOString()) {
 }
 
 /** Récupère et écrit les morceaux d'une playlist (ou des favoris). Renvoie { written, failed, received }. */
-async function importPlaylistTracks(platform, { playlistId = null, playlistName = null, liked = false } = {}) {
+async function importPlaylistTracks(
+  platform,
+  { playlistId = null, playlistName = null, liked = false } = {},
+) {
   const endpoints = ENDPOINTS[platform]
   const url = liked ? endpoints.liked() : endpoints.tracks(playlistId)
   const tracks = await fetchJson(url)
@@ -161,6 +173,17 @@ export const useImportStore = defineStore('import', {
       return raw.map(ADAPTERS[platform].playlist)
     },
 
+    /**
+     * Cherche des vidéos YouTube pour une requête « artiste titre ».
+     * Lève plutôt que de renvoyer une liste vide en cas de panne : une recherche
+     * qui échoue et une recherche sans résultat n'appellent pas le même message.
+     */
+    async searchVideos(query) {
+      if (!base()) throw new ImportError(NOT_CONFIGURED, { status: 0, url: '' })
+      const raw = await fetchJson(ENDPOINTS.youtube.search(query))
+      return fromYoutubeSearchResults(raw)
+    },
+
     async importPlaylist(platform, opts = {}) {
       return importPlaylistTracks(platform, opts)
     },
@@ -216,7 +239,10 @@ export const useImportStore = defineStore('import', {
 
       if (ENDPOINTS[platform].liked) {
         try {
-          const result = await importPlaylistTracks(platform, { playlistName: 'Titres likés', liked: true })
+          const result = await importPlaylistTracks(platform, {
+            playlistName: 'Titres likés',
+            liked: true,
+          })
           imported += result.written
           writeFailures += result.failed.length
         } catch (err) {
@@ -228,11 +254,15 @@ export const useImportStore = defineStore('import', {
 
       const notes = []
       if (failures.length) notes.push(`échec sur : ${failures.join(', ')}`)
-      if (writeFailures) notes.push(`${pluriel(writeFailures, 'échec', 'échecs')} d'écriture en base`)
+      if (writeFailures)
+        notes.push(`${pluriel(writeFailures, 'échec', 'échecs')} d'écriture en base`)
       if (truncated.length) {
         notes.push(
           truncated
-            .map((t) => `${t.playlistName} : ${t.received} ${pluriel(t.received, 'morceau', 'morceaux')} reçu${t.received > 1 ? 's' : ''} sur ${t.announced} annoncé${t.announced > 1 ? 's' : ''} — la source tronque, vérifiez la limite du workflow n8n`)
+            .map(
+              (t) =>
+                `${t.playlistName} : ${t.received} ${pluriel(t.received, 'morceau', 'morceaux')} reçu${t.received > 1 ? 's' : ''} sur ${t.announced} annoncé${t.announced > 1 ? 's' : ''} — la source tronque, vérifiez la limite du workflow n8n`,
+            )
             .join(' ; '),
         )
       }

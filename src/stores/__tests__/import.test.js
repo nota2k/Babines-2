@@ -16,14 +16,43 @@ const errorResponse = (status) => ({ ok: false, status, json: async () => ({}) }
 
 // Formes réellement émises par les workflows (voir docs/n8n/).
 const SPOTIFY_PLAYLISTS = [
-  { name: 'BAT BEAT', description: '', tracks: { total: 2 }, uri: 'spotify:playlist:PL_A', id: 'PL_A', href: 'https://api.spotify.com/v1/playlists/PL_A' },
+  {
+    name: 'BAT BEAT',
+    description: '',
+    tracks: { total: 2 },
+    uri: 'spotify:playlist:PL_A',
+    id: 'PL_A',
+    href: 'https://api.spotify.com/v1/playlists/PL_A',
+  },
 ]
 const SPOTIFY_TRACKS = [
-  { track: { artist: 'Talking Heads', title: 'Burning Down the House', added_at: '2025-04-07T14:34:51Z', album: 'Survival', track_id: 'X1' } },
-  { track: { artist: 'Talking Heads', title: 'Once in a Lifetime', added_at: '2025-04-08T10:00:00Z', album: 'Remain in Light', track_id: 'X2' } },
+  {
+    track: {
+      artist: 'Talking Heads',
+      title: 'Burning Down the House',
+      added_at: '2025-04-07T14:34:51Z',
+      album: 'Survival',
+      track_id: 'X1',
+    },
+  },
+  {
+    track: {
+      artist: 'Talking Heads',
+      title: 'Once in a Lifetime',
+      added_at: '2025-04-08T10:00:00Z',
+      album: 'Remain in Light',
+      track_id: 'X2',
+    },
+  },
 ]
 const YOUTUBE_ITEMS = [
-  { playlistId: 'PL_Y', videoId: 'UBS4Gi1y_nc', title: 'Aphex Twin - Windowlicker (Official Video)', description: '', thumbnail_url: '' },
+  {
+    playlistId: 'PL_Y',
+    videoId: 'UBS4Gi1y_nc',
+    title: 'Aphex Twin - Windowlicker (Official Video)',
+    description: '',
+    thumbnail_url: '',
+  },
 ]
 
 const pendingDoc = (externalId, note = '') => ({
@@ -34,7 +63,17 @@ const pendingDoc = (externalId, note = '') => ({
   album: '',
   matchKey: '',
   pending: true,
-  sources: [{ platform: 'youtube', playlistId: null, playlistName: null, externalId, addedAt: null, url: `https://youtu.be/${externalId}`, rawTitle: null }],
+  sources: [
+    {
+      platform: 'youtube',
+      playlistId: null,
+      playlistName: null,
+      externalId,
+      addedAt: null,
+      url: `https://youtu.be/${externalId}`,
+      rawTitle: null,
+    },
+  ],
   note,
   tags: [],
   createdAt: '2026-08-18T14:00:00Z',
@@ -70,7 +109,11 @@ describe('endpoints réels', () => {
 
   it('appelle les URLs YouTube et n’essaie pas d’importer des favoris inexistants', async () => {
     const fetchMock = vi.fn(async (url) =>
-      url.endsWith('/youtube') ? jsonResponse([{ id: 'PL_Y', snippet: { title: 'Trouvailles' }, contentDetails: { itemCount: 1 } }]) : jsonResponse(YOUTUBE_ITEMS),
+      url.endsWith('/youtube')
+        ? jsonResponse([
+            { id: 'PL_Y', snippet: { title: 'Trouvailles' }, contentDetails: { itemCount: 1 } },
+          ])
+        : jsonResponse(YOUTUBE_ITEMS),
     )
     vi.stubGlobal('fetch', fetchMock)
 
@@ -85,8 +128,14 @@ describe('endpoints réels', () => {
 
 describe('écriture en base', () => {
   it('traduit la forme imbriquée de Spotify en document du modèle unique', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(SPOTIFY_TRACKS)))
-    await useImportStore().importPlaylist('spotify', { playlistId: 'PL_A', playlistName: 'BAT BEAT' })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(SPOTIFY_TRACKS)),
+    )
+    await useImportStore().importPlaylist('spotify', {
+      playlistId: 'PL_A',
+      playlistName: 'BAT BEAT',
+    })
 
     const doc = await getDb().get('track:spotify:X1')
     expect(doc.type).toBe('track')
@@ -98,8 +147,14 @@ describe('écriture en base', () => {
   })
 
   it('découpe le titre brut d’une vidéo YouTube et conserve l’original', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(YOUTUBE_ITEMS)))
-    await useImportStore().importPlaylist('youtube', { playlistId: 'PL_Y', playlistName: 'Trouvailles' })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(YOUTUBE_ITEMS)),
+    )
+    await useImportStore().importPlaylist('youtube', {
+      playlistId: 'PL_Y',
+      playlistName: 'Trouvailles',
+    })
 
     const doc = await getDb().get('track:youtube:UBS4Gi1y_nc')
     expect(doc.title).toBe('Windowlicker')
@@ -108,7 +163,10 @@ describe('écriture en base', () => {
   })
 
   it('RÉIMPORTER NE DÉTRUIT NI LA NOTE NI LES TAGS', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(SPOTIFY_TRACKS)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(SPOTIFY_TRACKS)),
+    )
     const importStore = useImportStore()
     const library = useLibraryStore()
 
@@ -124,7 +182,10 @@ describe('écriture en base', () => {
   })
 
   it('ajoute une provenance quand le morceau vient d’une seconde playlist', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(SPOTIFY_TRACKS)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(SPOTIFY_TRACKS)),
+    )
     const store = useImportStore()
     await store.importPlaylist('spotify', { playlistId: 'PL_A', playlistName: 'BAT BEAT' })
     await store.importPlaylist('spotify', { playlistId: 'PL_B', playlistName: 'VOYAGER' })
@@ -184,7 +245,10 @@ describe('forme réelle du workflow YouTube — pas la forme brute de l’API Go
 
 describe('erreurs — jamais de liste vide silencieuse', () => {
   it('consigne le code HTTP et la plateforme', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => errorResponse(500)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => errorResponse(500)),
+    )
     const store = useImportStore()
     await store.importPlatform('spotify')
 
@@ -197,7 +261,12 @@ describe('erreurs — jamais de liste vide silencieuse', () => {
   })
 
   it('consigne une panne réseau', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch') }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch')
+      }),
+    )
     const store = useImportStore()
     await store.importPlatform('deezer')
 
@@ -207,11 +276,18 @@ describe('erreurs — jamais de liste vide silencieuse', () => {
   })
 
   it('rapporte un import partiel avec le décompte', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (url) => {
-      if (url.includes('/getplaylist')) return jsonResponse([...SPOTIFY_PLAYLISTS, { id: 'PL_KO', name: 'CASSÉE', tracks: { total: 3 } }])
-      if (url.includes('PL_KO')) return errorResponse(502)
-      return jsonResponse(SPOTIFY_TRACKS)
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url) => {
+        if (url.includes('/getplaylist'))
+          return jsonResponse([
+            ...SPOTIFY_PLAYLISTS,
+            { id: 'PL_KO', name: 'CASSÉE', tracks: { total: 3 } },
+          ])
+        if (url.includes('PL_KO')) return errorResponse(502)
+        return jsonResponse(SPOTIFY_TRACKS)
+      }),
+    )
     const store = useImportStore()
     await store.importPlatform('spotify')
 
@@ -225,10 +301,14 @@ describe('erreurs — jamais de liste vide silencieuse', () => {
 
 describe('détection des imports tronqués — la source ment, le job ne doit pas mentir avec elle', () => {
   it('signale une playlist dont la source annonce plus de morceaux qu’elle n’en renvoie', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (url) => {
-      if (url.includes('/getplaylist')) return jsonResponse([{ ...SPOTIFY_PLAYLISTS[0], tracks: { total: 60 } }])
-      return jsonResponse(SPOTIFY_TRACKS) // seulement 2 morceaux reçus
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url) => {
+        if (url.includes('/getplaylist'))
+          return jsonResponse([{ ...SPOTIFY_PLAYLISTS[0], tracks: { total: 60 } }])
+        return jsonResponse(SPOTIFY_TRACKS) // seulement 2 morceaux reçus
+      }),
+    )
     const store = useImportStore()
     await store.importPlatform('spotify')
 
@@ -241,10 +321,14 @@ describe('détection des imports tronqués — la source ment, le job ne doit pa
   })
 
   it('ne signale rien quand le nombre reçu correspond à l’annoncé', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (url) => {
-      if (url.includes('/getplaylist')) return jsonResponse([{ ...SPOTIFY_PLAYLISTS[0], tracks: { total: 2 } }])
-      return jsonResponse(SPOTIFY_TRACKS)
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url) => {
+        if (url.includes('/getplaylist'))
+          return jsonResponse([{ ...SPOTIFY_PLAYLISTS[0], tracks: { total: 2 } }])
+        return jsonResponse(SPOTIFY_TRACKS)
+      }),
+    )
     const store = useImportStore()
     await store.importPlatform('spotify')
 
@@ -254,10 +338,14 @@ describe('détection des imports tronqués — la source ment, le job ne doit pa
   })
 
   it('ne signale rien quand la playlist n’annonce aucun total', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (url) => {
-      if (url.includes('/getplaylist')) return jsonResponse([{ ...SPOTIFY_PLAYLISTS[0], tracks: { total: null } }])
-      return jsonResponse(SPOTIFY_TRACKS)
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url) => {
+        if (url.includes('/getplaylist'))
+          return jsonResponse([{ ...SPOTIFY_PLAYLISTS[0], tracks: { total: null } }])
+        return jsonResponse(SPOTIFY_TRACKS)
+      }),
+    )
     const store = useImportStore()
     await store.importPlatform('spotify')
 
@@ -267,10 +355,14 @@ describe('détection des imports tronqués — la source ment, le job ne doit pa
   })
 
   it('ne signale rien quand on reçoit plus que l’annoncé', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (url) => {
-      if (url.includes('/getplaylist')) return jsonResponse([{ ...SPOTIFY_PLAYLISTS[0], tracks: { total: 1 } }])
-      return jsonResponse(SPOTIFY_TRACKS) // 2 reçus, 1 annoncé
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url) => {
+        if (url.includes('/getplaylist'))
+          return jsonResponse([{ ...SPOTIFY_PLAYLISTS[0], tracks: { total: 1 } }])
+        return jsonResponse(SPOTIFY_TRACKS) // 2 reçus, 1 annoncé
+      }),
+    )
     const store = useImportStore()
     await store.importPlatform('spotify')
 
@@ -279,16 +371,19 @@ describe('détection des imports tronqués — la source ment, le job ne doit pa
   })
 
   it('porte à la fois une troncature et un échec réseau dans le même message', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (url) => {
-      if (url.includes('/getplaylist')) {
-        return jsonResponse([
-          { ...SPOTIFY_PLAYLISTS[0], tracks: { total: 60 } },
-          { id: 'PL_KO', name: 'CASSÉE', tracks: { total: 3 } },
-        ])
-      }
-      if (url.includes('PL_KO')) return errorResponse(502)
-      return jsonResponse(SPOTIFY_TRACKS) // 2 reçus sur 60 annoncés pour BAT BEAT
-    }))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url) => {
+        if (url.includes('/getplaylist')) {
+          return jsonResponse([
+            { ...SPOTIFY_PLAYLISTS[0], tracks: { total: 60 } },
+            { id: 'PL_KO', name: 'CASSÉE', tracks: { total: 3 } },
+          ])
+        }
+        if (url.includes('PL_KO')) return errorResponse(502)
+        return jsonResponse(SPOTIFY_TRACKS) // 2 reçus sur 60 annoncés pour BAT BEAT
+      }),
+    )
     const store = useImportStore()
     await store.importPlatform('spotify')
 
@@ -305,7 +400,9 @@ describe('resolvePending', () => {
     const db = getDb()
     await db.put(pendingDoc('UBS4Gi1y_nc', 'entendu en soirée'))
 
-    const fetchMock = vi.fn(async () => jsonResponse({ videoId: 'UBS4Gi1y_nc', title: 'Aphex Twin - Windowlicker (Official Video)' }))
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({ videoId: 'UBS4Gi1y_nc', title: 'Aphex Twin - Windowlicker (Official Video)' }),
+    )
     vi.stubGlobal('fetch', fetchMock)
 
     const resolved = await useImportStore().resolvePending()
@@ -322,7 +419,10 @@ describe('resolvePending', () => {
   it('laisse l’entrée en attente si la résolution échoue, sans rien perdre', async () => {
     const db = getDb()
     await db.put(pendingDoc('ZZZ', 'à réécouter'))
-    vi.stubGlobal('fetch', vi.fn(async () => errorResponse(404)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => errorResponse(404)),
+    )
 
     const resolved = await useImportStore().resolvePending()
     const doc = await db.get('track:youtube:ZZZ')
@@ -334,25 +434,39 @@ describe('resolvePending', () => {
 
 describe('écritures vérifiées — le compteur ne doit pas mentir', () => {
   it('ne compte que les morceaux réellement écrits', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(SPOTIFY_TRACKS)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(SPOTIFY_TRACKS)),
+    )
     const db = getDb()
     const realBulkDocs = db.bulkDocs.bind(db)
     db.bulkDocs = async (docs) => {
       const results = await realBulkDocs(docs)
       // Le premier document échoue, comme le ferait un conflit de révision.
-      return results.map((r, i) => (i === 0 ? { id: docs[0]._id, error: true, name: 'conflict', message: 'simulé' } : r))
+      return results.map((r, i) =>
+        i === 0 ? { id: docs[0]._id, error: true, name: 'conflict', message: 'simulé' } : r,
+      )
     }
 
-    const { written } = await useImportStore().importPlaylist('spotify', { playlistId: 'PL_A', playlistName: 'BAT BEAT' })
+    const { written } = await useImportStore().importPlaylist('spotify', {
+      playlistId: 'PL_A',
+      playlistName: 'BAT BEAT',
+    })
     expect(written).toBe(1)
   })
 
   it('fait remonter un échec d’écriture dans le job, pas seulement dans le décompte', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (url) =>
-      url.includes('/getplaylist') ? jsonResponse(SPOTIFY_PLAYLISTS) : jsonResponse(SPOTIFY_TRACKS),
-    ))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url) =>
+        url.includes('/getplaylist')
+          ? jsonResponse(SPOTIFY_PLAYLISTS)
+          : jsonResponse(SPOTIFY_TRACKS),
+      ),
+    )
     const db = getDb()
-    db.bulkDocs = async (docs) => docs.map((d) => ({ id: d._id, error: true, name: 'conflict', message: 'simulé' }))
+    db.bulkDocs = async (docs) =>
+      docs.map((d) => ({ id: d._id, error: true, name: 'conflict', message: 'simulé' }))
 
     const store = useImportStore()
     await store.importPlatform('spotify')
@@ -365,9 +479,15 @@ describe('écritures vérifiées — le compteur ne doit pas mentir', () => {
 
   it('ne se contredit pas quand la même piste apparaît deux fois dans une volée', async () => {
     const doubled = [SPOTIFY_TRACKS[0], SPOTIFY_TRACKS[0]]
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(doubled)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(doubled)),
+    )
 
-    const { written } = await useImportStore().importPlaylist('spotify', { playlistId: 'PL_A', playlistName: 'BAT BEAT' })
+    const { written } = await useImportStore().importPlaylist('spotify', {
+      playlistId: 'PL_A',
+      playlistName: 'BAT BEAT',
+    })
 
     // Un seul document, une seule écriture, aucun conflit.
     expect(written).toBe(1)
@@ -380,7 +500,10 @@ describe('resolvePending — le silence global disparaît', () => {
   it('consigne un job quand des résolutions échouent', async () => {
     const db = getDb()
     await db.put(pendingDoc('ZZZ', 'à réécouter'))
-    vi.stubGlobal('fetch', vi.fn(async () => errorResponse(404)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => errorResponse(404)),
+    )
 
     const store = useImportStore()
     const resolved = await store.resolvePending()
@@ -395,7 +518,12 @@ describe('resolvePending — le silence global disparaît', () => {
   it('ne consigne aucun job quand tout se résout', async () => {
     const db = getDb()
     await db.put(pendingDoc('UBS4Gi1y_nc'))
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({ videoId: 'UBS4Gi1y_nc', title: 'Aphex Twin - Windowlicker' })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        jsonResponse({ videoId: 'UBS4Gi1y_nc', title: 'Aphex Twin - Windowlicker' }),
+      ),
+    )
 
     const store = useImportStore()
     await store.resolvePending()
@@ -436,6 +564,80 @@ describe('n8n non configuré', () => {
   })
 })
 
+describe('searchVideos', () => {
+  // Forme réellement émise par le workflow searchvideos : items affecté par un
+  // nœud « Edit Fields », puis allIncomingItems qui enveloppe dans un tableau.
+  const REPONSE = [
+    {
+      items: [
+        {
+          id: { videoId: 'V1' },
+          snippet: {
+            title: 'Talking Heads - Once in a Lifetime',
+            channelTitle: 'Talking Heads',
+            publishedAt: '2011-02-15T00:00:00Z',
+            thumbnails: { medium: { url: 'https://i.ytimg.com/vi/V1/mqdefault.jpg' } },
+          },
+        },
+      ],
+    },
+  ]
+
+  it('interroge le bon webhook avec la requête encodée', async () => {
+    global.fetch = vi.fn().mockResolvedValue(jsonResponse(REPONSE))
+    const imports = useImportStore()
+
+    await imports.searchVideos('Talking Heads Once in a Lifetime')
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      `${BASE}/searchvideos?q=Talking%20Heads%20Once%20in%20a%20Lifetime`,
+    )
+  })
+
+  it('renvoie les candidats traduits', async () => {
+    global.fetch = vi.fn().mockResolvedValue(jsonResponse(REPONSE))
+    const imports = useImportStore()
+
+    const candidats = await imports.searchVideos('Talking Heads')
+
+    expect(candidats).toEqual([
+      {
+        videoId: 'V1',
+        title: 'Talking Heads - Once in a Lifetime',
+        channel: 'Talking Heads',
+        thumbnail: 'https://i.ytimg.com/vi/V1/mqdefault.jpg',
+        url: 'https://www.youtube.com/watch?v=V1',
+        publishedAt: '2011-02-15T00:00:00Z',
+      },
+    ])
+  })
+
+  it('renvoie une liste vide quand YouTube ne trouve rien', async () => {
+    global.fetch = vi.fn().mockResolvedValue(jsonResponse([{ items: [] }]))
+    const imports = useImportStore()
+
+    expect(await imports.searchVideos('zzzz')).toEqual([])
+  })
+
+  it('lève une ImportError portant le statut sur une réponse en erreur', async () => {
+    global.fetch = vi.fn().mockResolvedValue(errorResponse(500))
+    const imports = useImportStore()
+
+    await expect(imports.searchVideos('Talking Heads')).rejects.toMatchObject({
+      name: 'ImportError',
+      status: 500,
+    })
+  })
+
+  it('refuse d’appeler le réseau quand n8n n’est pas configuré', async () => {
+    vi.stubEnv('VITE_N8N_BASE_URL', '')
+    global.fetch = vi.fn()
+    const imports = useImportStore()
+
+    await expect(imports.searchVideos('Talking Heads')).rejects.toThrow(/VITE_N8N_BASE_URL/)
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+})
 describe('resolveOne — résolution à l’enregistrement', () => {
   it('complète l’entrée qu’on vient de capturer, sans toucher aux autres', async () => {
     const db = getDb()
@@ -467,7 +669,10 @@ describe('resolveOne — résolution à l’enregistrement', () => {
   it('renvoie false et laisse l’entrée en attente quand la résolution échoue', async () => {
     const db = getDb()
     await db.put(pendingDoc('ZZZ', 'à réécouter'))
-    vi.stubGlobal('fetch', vi.fn(async () => errorResponse(500)))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => errorResponse(500)),
+    )
 
     const ok = await useImportStore().resolveOne('track:youtube:ZZZ')
 
@@ -480,9 +685,16 @@ describe('resolveOne — résolution à l’enregistrement', () => {
   it('ne tente rien pour une entrée sans provenance, comme un artiste noté à la main', async () => {
     const db = getDb()
     await db.put({
-      _id: 'artist:1', type: 'artist', name: 'Aphex Twin', matchKey: 'aphex twin',
-      pending: false, sources: [], note: '', tags: [],
-      createdAt: '2026-08-18T14:00:00Z', updatedAt: '2026-08-18T14:00:00Z',
+      _id: 'artist:1',
+      type: 'artist',
+      name: 'Aphex Twin',
+      matchKey: 'aphex twin',
+      pending: false,
+      sources: [],
+      note: '',
+      tags: [],
+      createdAt: '2026-08-18T14:00:00Z',
+      updatedAt: '2026-08-18T14:00:00Z',
     })
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
