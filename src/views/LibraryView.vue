@@ -31,7 +31,7 @@ onMounted(() => {
       </span>
     </p>
 
-    <LibraryList :entries="library.filtered" :total="library.entries.length" />
+    <LibraryList :entries="library.filtered" :total="library.entries.length" :loading="library.isLoading" />
   </main>
 </template>
 

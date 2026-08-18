@@ -73,6 +73,9 @@ export const useLibraryStore = defineStore('library', {
 
   actions: {
     async load() {
+      // Un second appel pendant qu'une lecture est en vol rejoindrait le premier
+      // et ferait retomber isLoading trop tôt : on renvoie ce qu'on a déjà.
+      if (this.isLoading) return this.entries
       this.isLoading = true
       this.error = null
       try {

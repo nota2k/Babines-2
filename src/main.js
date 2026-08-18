@@ -20,8 +20,17 @@ async function bootstrap() {
 
   try {
     await ensureIndexes(db)
-    await migrateAll(db)
+    const migration = await migrateAll(db)
     await library.load()
+
+    // Un échec partiel de migration ne lève pas d'exception : sans ça, il resterait
+    // invisible. Ce qui a échoué est resté en base, rien n'est perdu, mais il faut
+    // le dire.
+    if (migration.failed.length) {
+      library.error =
+        `Migration incomplète : ${migration.failed.length} document(s) n'ont pas pu être convertis. ` +
+        `Ils sont toujours en base et seront retentés au prochain démarrage.`
+    }
   } catch (err) {
     library.error = `Démarrage impossible : ${err.message}`
     return
