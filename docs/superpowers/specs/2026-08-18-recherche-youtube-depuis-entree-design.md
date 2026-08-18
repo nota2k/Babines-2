@@ -53,8 +53,10 @@ Les chemins consommés, tous déjà exportés dans `docs/n8n/` :
    (`docs/n8n/YT_Babines_searchItems.json`) et appliqué à l'instance.
 2. **`addvideotoyoutube`** : le corps JSON du nœud HTTP Request porte `"playlistId":
    "FL12ctQJ5zuiZlEZW5CRFrQg"` en dur. Il doit devenir `"playlistId": "{{ $json.query.playlistId }}"`
-   pour que la destination soit choisie à l'envoi. **À vérifier avant l'implémentation** : sans cette
-   modification, le sélecteur de playlist est décoratif et tout part dans la même liste.
+   pour que la destination soit choisie à l'envoi. Appliqué à l'instance. L'export versionné
+   `docs/n8n/YT_Babines_addItems.json` porte encore la valeur en dur : il sera à réexporter. Sans
+   cette modification, le sélecteur de playlist serait décoratif et tout partirait dans la même liste
+   — c'est la première chose à vérifier si un envoi arrive au mauvais endroit.
 
 ### Forme de réponse de `searchvideos`
 
