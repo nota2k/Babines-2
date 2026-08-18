@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLibraryStore } from '@/stores/library.js'
 import { matchKey } from '@/services/normalize.js'
+import YoutubeMatch from '@/components/YoutubeMatch.vue'
 
 const props = defineProps({ entry: { type: Object, required: true } })
 
@@ -35,12 +36,14 @@ async function save() {
   feedback.value = ''
   // Les tags sont dédoublonnés : un tag saisi deux fois polluerait le document,
   // la ligne de la bibliothèque et l'export, alors que le filtre le masquerait.
-  const tags = [...new Set(
-    tagsInput.value
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean),
-  )]
+  const tags = [
+    ...new Set(
+      tagsInput.value
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean),
+    ),
+  ]
 
   const cleanName = name.value.trim()
   const cleanTitle = title.value.trim()
@@ -50,7 +53,9 @@ async function save() {
   // futur (splitYoutubeTitle redonnerait systématiquement le même mauvais
   // découpage) : on horodate la correction, mergeTrackDoc s'appuie dessus
   // pour ne plus réécrire ces deux champs.
-  const titleChanged = !isArtist.value && (cleanTitle !== (props.entry.title || '') || cleanArtist !== (props.entry.artist || ''))
+  const titleChanged =
+    !isArtist.value &&
+    (cleanTitle !== (props.entry.title || '') || cleanArtist !== (props.entry.artist || ''))
 
   const patch = isArtist.value
     ? { note: note.value, tags, name: cleanName, matchKey: matchKey(cleanName) }
@@ -101,16 +106,22 @@ async function remove() {
         <label>Titre <input v-model="title" type="text" /></label>
         <label>Artiste <input v-model="artist" type="text" /></label>
         <p v-if="entry.pending" class="pending">
-          Entrée capturée par lien, pas encore enrichie. Elle se complétera au prochain retour du réseau,
-          ou vous pouvez la renseigner ici.
+          Entrée capturée par lien, pas encore enrichie. Elle se complétera au prochain retour du
+          réseau, ou vous pouvez la renseigner ici.
         </p>
       </template>
 
-      <label>Note
-        <textarea v-model="note" rows="5" placeholder="vu au Petit Bain, recommandé par…"></textarea>
+      <label
+        >Note
+        <textarea
+          v-model="note"
+          rows="5"
+          placeholder="vu au Petit Bain, recommandé par…"
+        ></textarea>
       </label>
 
-      <label>Tags (séparés par des virgules)
+      <label
+        >Tags (séparés par des virgules)
         <input v-model="tagsInput" type="text" />
       </label>
 
@@ -134,6 +145,10 @@ async function remove() {
         </li>
       </ul>
     </section>
+
+    <!-- Une entrée de type artiste, ou un morceau sans titre, n'a pas de requête
+         à former : le panneau est absent plutôt que désactivé sans explication. -->
+    <YoutubeMatch v-if="entry.type === 'track' && entry.title" :entry="entry" />
   </article>
 </template>
 
