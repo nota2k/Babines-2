@@ -59,3 +59,51 @@ export function matchKey(artist = '', title = '') {
   const t = canonical(title)
   return t ? `${a}::${t}` : a
 }
+
+/**
+ * Une vidéo n'est pas un morceau : son titre est du texte libre.
+ * Heuristique volontairement simple, faillible et assumée (§6.5 de la spec) —
+ * le titre brut est toujours conservé dans la source pour correction manuelle.
+ */
+export function splitYoutubeTitle(rawTitle = '') {
+  const text = String(rawTitle).trim()
+  const match = text.match(/^(.+?)\s+[-–—]\s+(.+)$/)
+  if (!match) return { artist: '', title: stripNoise(text) }
+  return { artist: match[1].trim(), title: stripNoise(match[2]) }
+}
+
+/**
+ * Traduit un élément renvoyé par n8n vers le document unique de Babines.
+ * C'est le seul endroit où vivent les particularités de chaque plateforme.
+ */
+export function toTrackDoc(raw, source, now = new Date().toISOString()) {
+  const isYoutube = source.platform === 'youtube'
+  const parsed = isYoutube
+    ? splitYoutubeTitle(raw.title)
+    : { artist: raw.artist || '', title: raw.title || '' }
+
+  return {
+    _id: `track:${source.platform}:${raw.externalId}`,
+    type: 'track',
+    title: parsed.title,
+    artist: parsed.artist,
+    album: raw.album || '',
+    matchKey: matchKey(parsed.artist, parsed.title),
+    pending: false,
+    sources: [
+      {
+        platform: source.platform,
+        playlistId: source.playlistId ?? null,
+        playlistName: source.playlistName ?? null,
+        externalId: raw.externalId,
+        addedAt: raw.addedAt || null,
+        url: raw.url || null,
+        rawTitle: isYoutube ? raw.title : null,
+      },
+    ],
+    note: '',
+    tags: [],
+    createdAt: now,
+    updatedAt: now,
+  }
+}
