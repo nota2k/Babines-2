@@ -7,10 +7,11 @@
         "operation": "getAll",
         "playlistId": "={{ $json.query.playlistId }}",
         "part": [
-          "*",
           "snippet",
+          "contentDetails",
           "id"
         ],
+        "returnAll": true,
         "options": {}
       },
       "id": "ede5848c-fc12-47da-a9cf-3a01c7893e13",
@@ -58,37 +59,31 @@
             {
               "id": "fd94ca6c-3915-4e75-8024-8473cceeb94f",
               "name": "playlistId",
-              "value": "={{ $json.snippet.playlistId }}",
+              "value": "={{ $json.snippet?.playlistId ?? '' }}",
               "type": "string"
             },
             {
               "id": "01e26f8e-e808-450d-86f4-7c718e38e29e",
               "name": "videoId",
-              "value": "={{ $json.contentDetails.videoId }}",
+              "value": "={{ $json.contentDetails?.videoId ?? $json.snippet?.resourceId?.videoId ?? '' }}",
               "type": "string"
             },
             {
               "id": "7c1003cf-d58c-43fa-bf12-61561274baa3",
               "name": "title",
-              "value": "={{ $json.snippet.title }}",
+              "value": "={{ $json.snippet?.title ?? '' }}",
               "type": "string"
             },
             {
               "id": "ba249b43-4c25-4405-884e-bd58a743cf27",
               "name": "description",
-              "value": "={{ $json.snippet.description }}",
+              "value": "={{ $json.snippet?.description ?? '' }}",
               "type": "string"
             },
             {
               "id": "41f4b263-c601-47c7-a871-70ff1c157df3",
               "name": "thumbnail_url",
-              "value": "={{ $json.snippet.thumbnails.default.url }}",
-              "type": "string"
-            },
-            {
-              "id": "901302d6-c462-441c-a546-37465d12fd6c",
-              "name": "part",
-              "value": "={{ $json.snippet }}",
+              "value": "={{ $json.snippet?.thumbnails?.default?.url ?? '' }}",
               "type": "string"
             }
           ]

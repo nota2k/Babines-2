@@ -36,10 +36,6 @@
             {
               "name": "part",
               "value": "snippet"
-            },
-            {
-              "name": "id",
-              "value": "={{ $json.query.id }}"
             }
           ]
         },
@@ -62,7 +58,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"snippet\": {\n    \"playlistId\": \"FL12ctQJ5zuiZlEZW5CRFrQg\",\n    \"position\": 0,\n    \"resourceId\": {\n      \"kind\": \"youtube#video\",\n      \"videoId\": \"{{ $json.query.id }}\"\n    }\n  }\n}",
+        "jsonBody": "={\n  \"snippet\": {\n    \"playlistId\": \"{{ $json.query.playlistId }}\",\n    \"position\": 0,\n    \"resourceId\": {\n      \"kind\": \"youtube#video\",\n      \"videoId\": \"{{ $json.query.id }}\"\n    }\n  }\n}",
         "options": {}
       },
       "id": "208ccb37-3fee-451a-ac7a-6fb7cfbe82a8",
