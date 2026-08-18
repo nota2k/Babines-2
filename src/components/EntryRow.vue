@@ -27,7 +27,7 @@ const excerpt = computed(() => (props.entry.note || '').split('\n')[0].slice(0, 
 
 <style scoped>
 .row {
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--trait-fin);
 }
 
 .row a {
@@ -35,33 +35,41 @@ const excerpt = computed(() => (props.entry.note || '').split('\n')[0].slice(0, 
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.6em;
-  padding: 0.8em 0.4em;
-  color: black;
+  padding: 0.8em 0.7em;
+  color: var(--encre);
+  font-family: 'DM Sans', sans-serif;
+  transition: background-color 0.15s linear;
 }
 
 .row a:hover {
-  background: var(--yellow);
+  background: var(--jaune);
 }
 
 .title {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .artist,
 .note {
-  opacity: 0.75;
+  color: var(--encre-douce);
 }
 
 .badge,
 .platform,
 .tag {
-  font-size: 0.75em;
-  border: 1px solid black;
-  padding: 0 0.4em;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--trait);
+  padding: 0.1em 0.5em;
+  color: var(--encre-douce);
 }
 
 .badge.artist {
-  background: #a98be9;
+  background: var(--jaune);
+  color: var(--encre);
 }
 
 @media screen and (max-width: 768px) {

@@ -58,20 +58,25 @@ async function submit() {
   gap: 0.8em;
   align-items: center;
   flex-wrap: wrap;
-  padding: 1em 0;
-  border-bottom: 2px solid black;
+  padding: 1em;
+  margin: 1em 0;
+  background: var(--surface);
+  border: 1px solid var(--trait);
 }
 
 input {
   flex: 1 1 240px;
   padding: 0.8em;
-  border: 2px solid black;
-  font-size: 1.1em;
+  border: 1px solid var(--trait);
+  background: var(--surface-douce);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1em;
+  color: var(--encre);
 }
 
 button {
-  background-color: var(--yellow);
-  border: 2px solid black;
+  background-color: var(--jaune);
+  border: 1px solid var(--trait);
   border-radius: 100%;
   width: 56px;
   height: 56px;
@@ -79,10 +84,11 @@ button {
   justify-content: center;
   align-items: center;
   cursor: pointer;
+  transition: background-color 0.15s linear;
 }
 
 .add-icon {
-  background-color: black;
+  background-color: var(--encre);
   width: 26px;
   height: 26px;
   -webkit-mask-image: url(../assets/add.svg);
@@ -93,11 +99,12 @@ button {
   flex-basis: 100%;
   margin: 0;
   font-size: 0.9em;
+  color: var(--encre-douce);
 }
 
 .feedback a {
   margin-left: 0.5em;
-  color: black;
+  color: var(--encre);
   text-decoration: underline;
 }
 </style>

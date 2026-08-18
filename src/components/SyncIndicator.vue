@@ -18,27 +18,27 @@ const library = useLibraryStore()
   display: flex;
   align-items: center;
   gap: 0.5em;
+  font-family: 'DM Mono', monospace;
   font-size: 0.85em;
   margin: 0.5em 0;
-  opacity: 0.8;
+  color: var(--encre-douce);
 }
 
 .dot {
   width: 0.6em;
   height: 0.6em;
   border-radius: 50%;
-  background: #999;
+  background: var(--encre-tres-douce);
 }
 
 .idle .dot { background: #2e9e4f; }
-.pending .dot { background: var(--yellow); }
-.offline .dot { background: #999; }
+.pending .dot { background: var(--jaune); }
+.offline .dot { background: var(--encre-tres-douce); }
 .error .dot,
-.auth-error .dot { background: #b00020; }
+.auth-error .dot { background: var(--alerte); }
 
 .auth-error {
-  opacity: 1;
-  color: #b00020;
-  font-weight: 600;
+  color: var(--alerte);
+  font-weight: 700;
 }
 </style>

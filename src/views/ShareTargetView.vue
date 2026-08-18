@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
+import ErrorBanner from '@/components/ErrorBanner.vue'
 import { useLibraryStore } from '@/stores/library.js'
 
 const route = useRoute()
@@ -26,11 +27,17 @@ onMounted(async () => {
 <template>
   <AppHeader />
   <main class="share">
+    <ErrorBanner />
     <p>{{ message }}</p>
     <router-link class="back" :to="{ name: 'library' }">← Bibliothèque</router-link>
   </main>
 </template>
 
 <style scoped>
-main.share { display: block; }
+main.share {
+  display: block;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 1em clamp(16px, 2.6vw, 36px) 2em;
+}
 </style>

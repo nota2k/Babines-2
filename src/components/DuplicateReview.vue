@@ -62,13 +62,21 @@ const otherOf = (group, entry) => group.find((e) => e._id !== entry._id)
 
 <style scoped>
 .duplicates { max-width: 800px; margin: 0 auto; }
-.group { border: 2px solid black; padding: 1em; margin-bottom: 1em; }
-.group h3 { margin-top: 0; font-family: monospace; font-size: 0.9em; opacity: 0.7; }
+.group { border: 1px solid var(--trait); background: var(--surface); padding: 1em; margin-bottom: 1em; }
+.group h3 { margin-top: 0; font-family: 'DM Mono', monospace; font-size: 0.9em; color: var(--encre-douce); }
 ul { list-style: none; padding: 0; }
-li { padding: 0.4em 0; border-bottom: 1px solid #ddd; }
-.meta { display: block; font-size: 0.85em; opacity: 0.7; }
+li { padding: 0.4em 0; border-bottom: 1px solid var(--trait-fin); }
+.meta { display: block; font-size: 0.85em; color: var(--encre-douce); }
 .actions { display: flex; flex-direction: column; gap: 0.5em; margin-top: 1em; }
-button { padding: 0.6em; border: 2px solid black; background: var(--yellow); cursor: pointer; text-align: left; }
-.hint { opacity: 0.75; }
+button {
+  padding: 0.6em;
+  border: 1px solid var(--trait);
+  background: var(--jaune);
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s linear;
+}
+.hint { color: var(--encre-douce); }
 .feedback { display: block; margin-bottom: 1em; }
 </style>

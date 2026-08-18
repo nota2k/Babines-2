@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import AppHeader from '@/components/AppHeader.vue'
 import DuplicateReview from '@/components/DuplicateReview.vue'
+import ErrorBanner from '@/components/ErrorBanner.vue'
 import { useLibraryStore } from '@/stores/library.js'
 
 const library = useLibraryStore()
@@ -13,25 +14,17 @@ onMounted(() => {
 <template>
   <AppHeader />
   <main class="duplicates-view">
-    <p v-if="library.error" class="error" role="alert">{{ library.error }}</p>
-    <p v-if="library.notice" class="notice" role="status">{{ library.notice }}</p>
     <router-link class="back" :to="{ name: 'library' }">← Bibliothèque</router-link>
+    <ErrorBanner />
     <DuplicateReview />
   </main>
 </template>
 
 <style scoped>
-main.duplicates-view { display: block; }
-
-.error {
-  border: 2px solid #b00020;
-  background: #ffe9ec;
-  padding: 0.8em 1em;
-}
-
-.notice {
-  border: 2px solid #ffe13f;
-  background: #fffbe6;
-  padding: 0.8em 1em;
+main.duplicates-view {
+  display: block;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1em clamp(16px, 2.6vw, 36px) 2em;
 }
 </style>

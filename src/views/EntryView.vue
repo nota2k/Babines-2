@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import AppHeader from '@/components/AppHeader.vue'
+import ErrorBanner from '@/components/ErrorBanner.vue'
 import EntryDetail from '@/components/EntryDetail.vue'
 import { useLibraryStore } from '@/stores/library.js'
 
@@ -17,8 +18,7 @@ onMounted(() => {
 <template>
   <AppHeader />
   <main class="entry">
-    <p v-if="library.error" class="error" role="alert">{{ library.error }}</p>
-    <p v-if="library.notice" class="notice" role="status">{{ library.notice }}</p>
+    <ErrorBanner />
     <EntryDetail v-if="entry" :entry="entry" />
     <p v-else-if="library.isLoading">Chargement…</p>
     <p v-else>
@@ -30,17 +30,8 @@ onMounted(() => {
 <style scoped>
 main.entry {
   display: block;
-}
-
-.error {
-  border: 2px solid #b00020;
-  background: #ffe9ec;
-  padding: 0.8em 1em;
-}
-
-.notice {
-  border: 2px solid #ffe13f;
-  background: #fffbe6;
-  padding: 0.8em 1em;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1em clamp(16px, 2.6vw, 36px) 2em;
 }
 </style>

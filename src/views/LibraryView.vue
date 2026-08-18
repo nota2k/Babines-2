@@ -1,10 +1,12 @@
 <script setup>
 import { onMounted, onUnmounted } from 'vue'
 import AppHeader from '@/components/AppHeader.vue'
-import ExportButton from '@/components/ExportButton.vue'
+import ErrorBanner from '@/components/ErrorBanner.vue'
 import FilterBar from '@/components/FilterBar.vue'
 import LibraryList from '@/components/LibraryList.vue'
+import PlaylistNav from '@/components/PlaylistNav.vue'
 import QuickAdd from '@/components/QuickAdd.vue'
+import SidePastilles from '@/components/SidePastilles.vue'
 import SyncIndicator from '@/components/SyncIndicator.vue'
 import { useLibraryStore } from '@/stores/library.js'
 import { useImportStore } from '@/stores/import.js'
@@ -31,70 +33,55 @@ onUnmounted(() => {
 <template>
   <AppHeader />
   <main class="library">
-    <p v-if="library.error" class="error" role="alert">{{ library.error }}</p>
-    <p v-if="library.notice" class="notice" role="status">{{ library.notice }}</p>
-
-    <nav class="tabs">
-      <router-link :to="{ name: 'import' }">Sources</router-link>
-      <router-link :to="{ name: 'duplicates' }">Doublons</router-link>
-    </nav>
+    <ErrorBanner />
 
     <SyncIndicator />
 
     <QuickAdd />
 
-    <FilterBar />
+    <div class="columns">
+      <PlaylistNav />
 
-    <p class="count">
-      {{ library.filtered.length }} entrée<span v-if="library.filtered.length > 1">s</span>
-      <span v-if="library.filtered.length !== library.entries.length">
-        sur {{ library.entries.length }}
-      </span>
-    </p>
+      <div class="content">
+        <FilterBar />
 
-    <ExportButton />
+        <p class="count">
+          {{ library.filtered.length }} entrée<span v-if="library.filtered.length > 1">s</span>
+          <span v-if="library.filtered.length !== library.entries.length">
+            sur {{ library.entries.length }}
+          </span>
+        </p>
 
-    <LibraryList :entries="library.filtered" :total="library.entries.length" :loading="library.isLoading" />
+        <LibraryList :entries="library.filtered" :total="library.entries.length" :loading="library.isLoading" />
+      </div>
+
+      <SidePastilles />
+    </div>
   </main>
 </template>
 
 <style scoped>
 main.library {
   display: block;
-  max-width: 1000px;
+  max-width: 1560px;
   margin: 0 auto;
+  padding: 1em clamp(16px, 2.6vw, 36px) 2em;
 }
 
-.error {
-  border: 2px solid #b00020;
-  background: #ffe9ec;
-  padding: 0.8em 1em;
-}
-
-.notice {
-  border: 2px solid #ffe13f;
-  background: #fffbe6;
-  padding: 0.8em 1em;
-}
-
-.tabs {
+.columns {
   display: flex;
-  gap: 1em;
-  margin-bottom: 1em;
+  flex-wrap: wrap;
+  gap: clamp(16px, 2.6vw, 36px);
+  align-items: flex-start;
 }
 
-.tabs a {
-  color: black;
-  border: 2px solid black;
-  padding: 0.3em 0.8em;
-}
-
-.tabs a.router-link-active {
-  background: var(--yellow);
+.content {
+  flex: 999 1 min(100%, 380px);
 }
 
 .count {
-  font-size: 0.9em;
-  opacity: 0.7;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85em;
+  color: var(--encre-douce);
 }
 </style>

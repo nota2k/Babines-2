@@ -81,9 +81,11 @@ function retry(job) {
 
 button {
   padding: 0.7em 1.2em;
-  border: 2px solid black;
-  background: var(--yellow);
+  border: 1px solid var(--trait);
+  background: var(--jaune);
+  font-family: 'DM Sans', sans-serif;
   cursor: pointer;
+  transition: background-color 0.15s linear;
 }
 
 button:disabled {
@@ -97,16 +99,17 @@ button:disabled {
 }
 
 .jobs li {
-  border: 2px solid black;
+  border: 1px solid var(--trait);
+  background: var(--surface);
   padding: 0.8em;
   margin-bottom: 0.8em;
 }
 
-.jobs li.error { border-color: #b00020; background: #ffe9ec; }
-.jobs li.partial { background: #fff7cc; }
+.jobs li.error { border-color: var(--alerte); background: var(--alerte-fond); }
+.jobs li.partial { background: #fffbe6; border-color: var(--jaune); }
 
 .status { font-variant: small-caps; margin-left: 0.6em; }
-.time { float: right; opacity: 0.6; }
+.time { float: right; color: var(--encre-tres-douce); font-family: 'DM Mono', monospace; }
 .message { margin: 0.4em 0; }
-.hint { opacity: 0.75; }
+.hint { color: var(--encre-douce); }
 </style>

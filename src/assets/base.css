@@ -46,3 +46,20 @@ a {
 main {
   padding-bottom: 4em;
 }
+
+/* Lien de retour vers la bibliothèque, répété dans plusieurs écrans. */
+.back {
+  display: inline-block;
+  margin-bottom: 1em;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--encre);
+  transition: color 0.15s linear;
+}
+
+.back:hover {
+  color: var(--encre-douce);
+}

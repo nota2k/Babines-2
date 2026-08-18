@@ -148,21 +148,34 @@ form {
   flex-direction: column;
   gap: 1em;
   margin: 1.5em 0;
+  padding: 1.2em;
+  background: var(--surface);
+  border: 1px solid var(--trait);
 }
 
 label {
   display: flex;
   flex-direction: column;
   gap: 0.3em;
-  font-weight: 600;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
 }
 
 input,
 textarea {
   padding: 0.6em;
-  border: 2px solid black;
+  border: 1px solid var(--trait);
+  background: var(--surface-douce);
   font: inherit;
+  font-family: 'DM Sans', sans-serif;
   font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--encre);
 }
 
 .actions {
@@ -174,19 +187,23 @@ textarea {
 
 button {
   padding: 0.6em 1.2em;
-  border: 2px solid black;
-  background: var(--yellow);
+  border: 1px solid var(--trait);
+  background: var(--jaune);
+  font-family: 'DM Sans', sans-serif;
   cursor: pointer;
+  transition: background-color 0.15s linear;
 }
 
 button.danger {
-  background: white;
+  background: var(--surface);
 }
 
 .pending {
-  background: #fff7cc;
+  background: #fffbe6;
+  border: 1px solid var(--jaune);
   padding: 0.6em;
   margin: 0;
+  color: var(--encre);
 }
 
 .sources ul {
@@ -196,12 +213,12 @@ button.danger {
 
 .sources li {
   padding: 0.5em 0;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--trait-fin);
 }
 
 .raw {
   display: block;
-  opacity: 0.6;
+  color: var(--encre-tres-douce);
   font-size: 0.85em;
 }
 </style>

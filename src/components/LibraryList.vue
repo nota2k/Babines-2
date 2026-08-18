@@ -25,16 +25,15 @@ defineProps({
   list-style: none;
   padding: 0;
   margin: 0;
-  border-top: 2px solid black;
+  background: var(--surface);
+  border: 1px solid var(--trait);
 }
 
-.empty {
-  padding: 2em 0;
-  opacity: 0.7;
-}
-
+.empty,
 .loading {
-  padding: 2em 0;
-  opacity: 0.7;
+  padding: 2em 1em;
+  color: var(--encre-douce);
+  background: var(--surface);
+  border: 1px solid var(--trait);
 }
 </style>
