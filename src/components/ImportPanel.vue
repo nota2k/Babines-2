@@ -42,7 +42,13 @@ function retry(job) {
         <span v-if="job.httpStatus"> — HTTP {{ job.httpStatus }}</span>
         <span class="time">{{ (job.finishedAt || job.startedAt).slice(11, 19) }}</span>
         <p class="message">{{ job.message || 'en cours…' }}</p>
-        <button v-if="job.status !== 'running' && job.status !== 'ok'" type="button" @click="retry(job)">
+        <button
+          v-if="job.status !== 'running' && job.status !== 'ok'"
+          type="button"
+          :disabled="imports.running"
+          :aria-label="`Réessayer l’import ${job.label}`"
+          @click="retry(job)"
+        >
           Réessayer
         </button>
       </li>
