@@ -70,7 +70,8 @@ PouchDB choisit son adaptateur d'après la **forme du nom** qu'on lui passe. Vé
 
 ```
 "/db/babines"               → adapter: leveldb   ← une base LOCALE
-"https://x.test/db/babines" → adapter: http
+"http://babines.test/db/x"  → adapter: http
+"https://babines.test/db/x" → adapter: https
 ```
 
 Passer `/db` tel quel ne produirait aucune erreur : PouchDB créerait une **seconde base locale** et y répliquerait la première. L'indicateur afficherait « à jour » et rien n'atteindrait le serveur. C'est une panne silencieuse — pas de message, pas de donnée manquante à l'écran — qu'on ne découvrirait qu'en ouvrant l'application sur un autre appareil.
@@ -79,7 +80,18 @@ Ce test est le plus important de cette transition. Sans lui, la panne peut réap
 
 - [ ] **Step 1: Écrire les tests qui échouent**
 
-Ajouter `resolveRemoteUrl` à l'import en tête de `src/services/__tests__/db.test.js` (aujourd'hui `import { createDb, setDb, getDb, ensureIndexes, classifyReplicationError, startReplication } from '@/services/db.js'` — conserver l'ordre existant et ajouter le nouveau nom), puis ajouter en fin de fichier :
+Ajouter `resolveRemoteUrl` à l'import en tête de `src/services/__tests__/db.test.js`. Cet import est aujourd'hui, sur plusieurs lignes :
+
+```js
+import {
+  createDb,
+  ensureIndexes,
+  classifyReplicationError,
+  startReplication,
+} from '@/services/db.js'
+```
+
+Ajouter `resolveRemoteUrl` à cette liste. Puis ajouter en fin de fichier :
 
 ```js
 describe('resolveRemoteUrl', () => {
@@ -94,23 +106,25 @@ describe('resolveRemoteUrl', () => {
     expect(resolveRemoteUrl('http://ailleurs.test/db', ORIGINE)).toBe('http://ailleurs.test/db')
   })
 
-  it('garantit l’adaptateur http, ce que le chemin relatif ne ferait pas', async () => {
-    // C'est l'assertion qui compte : PouchDB choisit son adaptateur d'apres la
-    // forme du nom. Un chemin relatif donne « leveldb », donc une base locale,
+  it('produit une URL que PouchDB traite comme distante, non comme une base locale', () => {
+    // C'est l'assertion qui compte. PouchDB choisit son adaptateur d'apres la
+    // forme du nom : un chemin relatif donne « leveldb », donc une base LOCALE,
     // et la replication devient un aller-retour entre deux bases du navigateur
     // sans que rien ne le signale.
-    const relatif = new PouchDB('/db/babines')
-    expect(relatif.adapter).toBe('leveldb')
-    await relatif.close()
-
-    const absolu = new PouchDB(`${resolveRemoteUrl('/db', ORIGINE)}/babines`)
-    expect(absolu.adapter).toBe('http')
-    await absolu.close()
+    //
+    // Le cas relatif n'est volontairement PAS instancie ici : l'adaptateur
+    // leveldb tenterait de creer /db a la racine du systeme de fichiers et
+    // ferait echouer le test par « OpenError: /db/babines/LOCK ».
+    const distante = new PouchDB(`${resolveRemoteUrl('/db', ORIGINE)}/babines`)
+    expect(distante.adapter).toBe('https')
   })
 })
 ```
 
-Note : `PouchDB` est déjà importé en tête de ce fichier de tests.
+Deux notes, toutes deux vérifiées empiriquement sur ce dépôt :
+
+- `PouchDB` est déjà importé en tête de ce fichier de tests, avec l'adaptateur mémoire.
+- **Le nom d'adaptateur suit le protocole** : `https` pour une URL en `https://`, `http` pour `http://`. C'est pourquoi l'assertion attend `'https'` et non `'http'` — `ORIGINE` est en `https`.
 
 - [ ] **Step 2: Lancer les tests pour vérifier qu'ils échouent**
 

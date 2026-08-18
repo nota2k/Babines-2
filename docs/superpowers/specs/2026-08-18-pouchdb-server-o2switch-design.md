@@ -79,7 +79,8 @@ du projet :
 
 ```
 "/db/babines"              → adapter: leveldb   ← une base locale, pas une réplication
-"https://x.test/db/babines" → adapter: http
+"http://babines.test/db/x"  → adapter: http
+"https://babines.test/db/x" → adapter: https
 ```
 
 Passer `/db` tel quel à `startReplication()` ne produirait donc aucune erreur : PouchDB créerait une
