@@ -33,20 +33,30 @@ const isArtist = computed(() => props.entry.type === 'artist')
 async function save() {
   saving.value = true
   feedback.value = ''
-  const tags = tagsInput.value
-    .split(',')
-    .map((t) => t.trim())
-    .filter(Boolean)
+  // Les tags sont dédoublonnés : un tag saisi deux fois polluerait le document,
+  // la ligne de la bibliothèque et l'export, alors que le filtre le masquerait.
+  const tags = [...new Set(
+    tagsInput.value
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean),
+  )]
+
+  const cleanName = name.value.trim()
+  const cleanTitle = title.value.trim()
+  const cleanArtist = artist.value.trim()
 
   const patch = isArtist.value
-    ? { note: note.value, tags, name: name.value, matchKey: matchKey(name.value) }
+    ? { note: note.value, tags, name: cleanName, matchKey: matchKey(cleanName) }
     : {
         note: note.value,
         tags,
-        title: title.value,
-        artist: artist.value,
-        matchKey: matchKey(artist.value, title.value),
-        pending: props.entry.pending && !title.value,
+        title: cleanTitle,
+        artist: cleanArtist,
+        matchKey: matchKey(cleanArtist, cleanTitle),
+        // Une saisie faite uniquement d'espaces ne doit pas faire croire que
+        // l'entrée est complétée.
+        pending: props.entry.pending && !cleanTitle,
       }
 
   try {
@@ -61,8 +71,14 @@ async function save() {
 
 async function remove() {
   if (!window.confirm('Supprimer définitivement cette entrée ?')) return
-  await library.removeEntry(props.entry._id)
-  router.push({ name: 'library' })
+  try {
+    await library.removeEntry(props.entry._id)
+    router.push({ name: 'library' })
+  } catch (err) {
+    // Le store a déjà renseigné library.error ; on l'affiche ici, et on reste
+    // sur l'entrée — elle existe toujours.
+    feedback.value = library.error || `Suppression impossible : ${err.message}`
+  }
 }
 </script>
 
