@@ -44,6 +44,27 @@ export async function openSession({ name, password }) {
   return session
 }
 
+/**
+ * Retrouve une session encore valide au demarrage.
+ *
+ * Le cookie survit au rechargement, pas l'etat de ce module : sans cette
+ * verification, l'ecran de connexion reapparaitrait devant un utilisateur
+ * deja authentifie.
+ */
+export async function restoreSession() {
+  try {
+    const response = await fetch(base(), { method: 'GET' })
+    if (!response.ok) return null
+    const { userCtx } = await response.json()
+    session = userCtx?.name ? { name: userCtx.name } : null
+    return session
+  } catch {
+    // Hors ligne au demarrage : on reste deconnecte, la bibliotheque locale
+    // fonctionne quand meme et la session sera retrouvee au retour du reseau.
+    return null
+  }
+}
+
 export async function closeSession() {
   const ouverte = session
   // On oublie la session avant l'appel : ne pas pouvoir joindre le serveur ne

@@ -10,7 +10,7 @@ import SidePastilles from '@/components/SidePastilles.vue'
 import SortBar from '@/components/SortBar.vue'
 import SyncIndicator from '@/components/SyncIndicator.vue'
 import LoginPanel from '@/components/LoginPanel.vue'
-import { currentSession } from '@/services/session.js'
+import { currentSession, restoreSession } from '@/services/session.js'
 import { useLibraryStore } from '@/stores/library.js'
 import { useImportStore } from '@/stores/import.js'
 
@@ -38,6 +38,14 @@ onMounted(() => {
   // s'accumuleraient à chaque aller-retour.
   if (navigator.onLine) imports.resolvePending().catch(() => {})
   window.addEventListener('online', resolveOnReconnect)
+
+  // Le cookie de session survit au rechargement, pas cette vue : sans cette
+  // verification, l'ecran de connexion reapparaitrait devant un utilisateur
+  // deja authentifie. La replication elle-meme est deja relancee par
+  // main.js ; ici on ne fait que rafraichir l'affichage.
+  restoreSession().then((restaure) => {
+    if (restaure) session.value = restaure
+  })
 })
 
 onUnmounted(() => {

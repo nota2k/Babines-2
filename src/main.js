@@ -8,7 +8,7 @@ import router from './router'
 import { getDb, ensureIndexes, startReplication } from '@/services/db.js'
 import { migrateAll } from '@/services/migrate.js'
 import { useLibraryStore } from '@/stores/library.js'
-import { currentSession } from '@/services/session.js'
+import { restoreSession } from '@/services/session.js'
 
 // Petit helper d'accord : « 1 document » mais « 2 documents ».
 const pluriel = (n, singulier, plurielMot = singulier + 's') =>
@@ -61,7 +61,9 @@ async function bootstrap() {
     })
 
   library.startReplication = repliquer
-  if (currentSession()) repliquer()
+  // Le cookie de session survit au rechargement ; sans cette verification,
+  // la replication resterait en attente d'une reconnexion pourtant inutile.
+  if (await restoreSession()) repliquer()
 
   // Safari purge IndexedDB après ~7 jours sans ouverture. La demande peut être
   // refusée ; ce n'est pas grave, CouchDB rapatrie les données à la réouverture.

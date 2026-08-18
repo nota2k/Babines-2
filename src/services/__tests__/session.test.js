@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
-import { openSession, closeSession, currentSession } from '@/services/session.js'
+import { openSession, closeSession, currentSession, restoreSession } from '@/services/session.js'
 
 const jsonResponse = (body, status = 200) => ({
   ok: status < 400,
@@ -43,6 +43,41 @@ describe('openSession', () => {
     await expect(openSession({ name: 'nelly', password: 'secret' })).rejects.toThrow(
       /Failed to fetch/,
     )
+    expect(currentSession()).toBeNull()
+  })
+})
+
+describe('restoreSession', () => {
+  it('retrouve une session valide et la retient', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse({ ok: true, userCtx: { name: 'nelly', roles: [] } })),
+    )
+
+    const session = await restoreSession()
+
+    expect(session).toEqual({ name: 'nelly' })
+    expect(currentSession()).toEqual({ name: 'nelly' })
+  })
+
+  it('laisse la session fermée quand le serveur ne connaît personne', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(jsonResponse({ ok: true, userCtx: { name: null, roles: [] } })),
+    )
+
+    const session = await restoreSession()
+
+    expect(session).toBeNull()
+    expect(currentSession()).toBeNull()
+  })
+
+  it('laisse la session fermée sans lever quand le réseau est indisponible', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Failed to fetch')))
+
+    const session = await restoreSession()
+
+    expect(session).toBeNull()
     expect(currentSession()).toBeNull()
   })
 })
