@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "lint": "eslint . --fix",
     "format": "prettier --write src/",
-    "start": "http-server ./dist -p 5500"
+    "start": "http-server ./dist -p 5500",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "events": "^3.3.0",
@@ -28,7 +30,8 @@
     "globals": "^16.0.0",
     "prettier": "3.5.3",
     "vite": "^6.2.1",
-    "vite-plugin-vue-devtools": "^7.7.2"
+    "vite-plugin-vue-devtools": "^7.7.2",
+    "vitest": "^4.1.10"
   },
   "engines": {
     "npm": "10.9.2"

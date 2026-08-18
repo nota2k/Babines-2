@@ -22,4 +22,8 @@ export default defineConfig({
       events: 'events/'
     },
   },
+  test: {
+    environment: 'node',
+    include: ['src/**/__tests__/**/*.test.js'],
+  },
 })
