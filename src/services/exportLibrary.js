@@ -23,6 +23,17 @@ export function buildExport(entries, scope = 'library', exportedAt = new Date().
   return { version: EXPORT_VERSION, exportedAt, scope, tracks, artists, others }
 }
 
+/** Décrit la portée de l'export à partir des filtres actifs, pour le champ `scope`. */
+export function exportScope({ query = '', platform = '', playlist = '', tag = '', entryType = '' } = {}) {
+  const parts = []
+  if (playlist) parts.push(`playlist:${playlist}`)
+  if (platform) parts.push(`plateforme:${platform}`)
+  if (tag) parts.push(`tag:${tag}`)
+  if (entryType) parts.push(`type:${entryType}`)
+  if (query.trim()) parts.push(`recherche:${query.trim()}`)
+  return parts.length ? parts.join('+') : 'library'
+}
+
 const slug = (value) =>
   String(value)
     .normalize('NFD')

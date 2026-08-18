@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildExport, exportFilename, toExportEntry } from '@/services/exportLibrary.js'
+import { buildExport, exportFilename, exportScope, toExportEntry } from '@/services/exportLibrary.js'
 
 const AT = '2026-08-18T14:22:00Z'
 
@@ -97,6 +97,26 @@ describe('buildExport — rien ne doit disparaître', () => {
 
   it('retire aussi _rev des entrées inclassables', () => {
     expect(JSON.stringify(buildExport([inclassable], 'library', AT))).not.toContain('_rev')
+  })
+})
+
+describe('exportScope', () => {
+  const none = { query: '', platform: '', playlist: '', tag: '', entryType: '' }
+
+  it('vaut « library » sans filtre', () => {
+    expect(exportScope(none)).toBe('library')
+  })
+
+  it('nomme le filtre actif', () => {
+    expect(exportScope({ ...none, playlist: 'BAT BEAT' })).toBe('playlist:BAT BEAT')
+    expect(exportScope({ ...none, platform: 'deezer' })).toBe('plateforme:deezer')
+    expect(exportScope({ ...none, tag: 'funk' })).toBe('tag:funk')
+    expect(exportScope({ ...none, entryType: 'artist' })).toBe('type:artist')
+    expect(exportScope({ ...none, query: 'aphex' })).toBe('recherche:aphex')
+  })
+
+  it('combine plusieurs filtres', () => {
+    expect(exportScope({ ...none, platform: 'spotify', tag: 'funk' })).toBe('plateforme:spotify+tag:funk')
   })
 })
 

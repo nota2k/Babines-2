@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, onUnmounted } from 'vue'
 import Header from '@/components/Header.vue'
+import ExportButton from '@/components/ExportButton.vue'
 import FilterBar from '@/components/FilterBar.vue'
 import LibraryList from '@/components/LibraryList.vue'
 import QuickAdd from '@/components/QuickAdd.vue'
@@ -49,6 +50,8 @@ onUnmounted(() => {
         sur {{ library.entries.length }}
       </span>
     </p>
+
+    <ExportButton />
 
     <LibraryList :entries="library.filtered" :total="library.entries.length" :loading="library.isLoading" />
   </main>
