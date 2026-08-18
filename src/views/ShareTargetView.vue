@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import Header from '@/components/Header.vue'
+import AppHeader from '@/components/AppHeader.vue'
 import { useLibraryStore } from '@/stores/library.js'
 
 const route = useRoute()
@@ -24,7 +24,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <Header />
+  <AppHeader />
   <main class="share">
     <p>{{ message }}</p>
     <router-link class="back" :to="{ name: 'library' }">← Bibliothèque</router-link>

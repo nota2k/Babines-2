@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, onUnmounted } from 'vue'
-import Header from '@/components/Header.vue'
+import AppHeader from '@/components/AppHeader.vue'
 import ExportButton from '@/components/ExportButton.vue'
 import FilterBar from '@/components/FilterBar.vue'
 import LibraryList from '@/components/LibraryList.vue'
@@ -29,7 +29,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Header />
+  <AppHeader />
   <main class="library">
     <p v-if="library.error" class="error" role="alert">{{ library.error }}</p>
 

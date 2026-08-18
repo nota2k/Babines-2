@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted } from 'vue'
-import Header from '@/components/Header.vue'
+import AppHeader from '@/components/AppHeader.vue'
 import DuplicateReview from '@/components/DuplicateReview.vue'
 import { useLibraryStore } from '@/stores/library.js'
 
@@ -11,7 +11,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <Header />
+  <AppHeader />
   <main class="duplicates-view">
     <p v-if="library.error" class="error" role="alert">{{ library.error }}</p>
     <router-link class="back" :to="{ name: 'library' }">← Bibliothèque</router-link>
