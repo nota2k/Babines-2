@@ -638,6 +638,66 @@ describe('searchVideos', () => {
     expect(global.fetch).not.toHaveBeenCalled()
   })
 })
+
+describe('playlistContains', () => {
+  // Forme émise par getPlaylistVideo : plate, comme YOUTUBE_ITEMS en tête de fichier.
+  const CONTENU = [
+    { playlistId: 'PL_Y', videoId: 'V1', title: 'Une vidéo' },
+    { playlistId: 'PL_Y', videoId: 'V2', title: 'Une autre' },
+  ]
+
+  it('trouve une vidéo présente et rapporte le nombre d’éléments examinés', async () => {
+    global.fetch = vi.fn().mockResolvedValue(jsonResponse(CONTENU))
+    const imports = useImportStore()
+
+    expect(await imports.playlistContains('PL_Y', 'V2')).toEqual({ found: true, checked: 2 })
+  })
+
+  it('ne trouve pas une vidéo absente, en rapportant ce qui a été examiné', async () => {
+    global.fetch = vi.fn().mockResolvedValue(jsonResponse(CONTENU))
+    const imports = useImportStore()
+
+    // `checked` est ce qui permet à l’écran de dire « absente des 2 premières »
+    // plutôt que d’affirmer une absence que la troncature ne garantit pas.
+    expect(await imports.playlistContains('PL_Y', 'V9')).toEqual({ found: false, checked: 2 })
+  })
+
+  it('interroge le contenu de la bonne playlist', async () => {
+    global.fetch = vi.fn().mockResolvedValue(jsonResponse(CONTENU))
+    const imports = useImportStore()
+
+    await imports.playlistContains('PL_Y', 'V1')
+
+    expect(global.fetch).toHaveBeenCalledWith(`${BASE}/youtube/items?playlistId=PL_Y`)
+  })
+
+  it('lit l’identifiant même sous snippet.resourceId', async () => {
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(jsonResponse([{ snippet: { resourceId: { videoId: 'V3' } } }]))
+    const imports = useImportStore()
+
+    expect(await imports.playlistContains('PL_Y', 'V3')).toEqual({ found: true, checked: 1 })
+  })
+
+  it('traite une playlist vide sans jeter', async () => {
+    global.fetch = vi.fn().mockResolvedValue(jsonResponse([]))
+    const imports = useImportStore()
+
+    expect(await imports.playlistContains('PL_Y', 'V1')).toEqual({ found: false, checked: 0 })
+  })
+
+  it('lève sur une réponse en erreur : c’est à l’appelant de décider de passer outre', async () => {
+    global.fetch = vi.fn().mockResolvedValue(errorResponse(404))
+    const imports = useImportStore()
+
+    await expect(imports.playlistContains('PL_Y', 'V1')).rejects.toMatchObject({
+      name: 'ImportError',
+      status: 404,
+    })
+  })
+})
+
 describe('resolveOne — résolution à l’enregistrement', () => {
   it('complète l’entrée qu’on vient de capturer, sans toucher aux autres', async () => {
     const db = getDb()

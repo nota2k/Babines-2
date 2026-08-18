@@ -184,6 +184,23 @@ export const useImportStore = defineStore('import', {
       return fromYoutubeSearchResults(raw)
     },
 
+    /**
+     * Dit si une vidéo est déjà dans une playlist, et sur combien d'éléments.
+     *
+     * `checked` n'est pas décoratif : le workflow getPlaylistVideo tronque (voir
+     * le commentaire d'importPlatform plus bas). Renvoyer un booléen nu laisserait
+     * l'écran affirmer « absente » sur la foi d'une liste incomplète.
+     */
+    async playlistContains(playlistId, videoId) {
+      if (!base()) throw new ImportError(NOT_CONFIGURED, { status: 0, url: '' })
+      const raw = await fetchJson(ENDPOINTS.youtube.tracks(playlistId))
+      const items = Array.isArray(raw) ? raw : []
+      // On passe par l'adaptateur existant : il tolère déjà les trois endroits où
+      // le workflow peut poser l'identifiant, et le redire ici les ferait diverger.
+      const ids = items.map((item) => ADAPTERS.youtube.track(item).externalId)
+      return { found: ids.includes(videoId), checked: ids.length }
+    },
+
     async importPlaylist(platform, opts = {}) {
       return importPlaylistTracks(platform, opts)
     },
