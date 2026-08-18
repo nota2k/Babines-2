@@ -9,6 +9,9 @@ import { getDb, ensureIndexes, startReplication } from '@/services/db.js'
 import { migrateAll } from '@/services/migrate.js'
 import { useLibraryStore } from '@/stores/library.js'
 
+// Petit helper d'accord : « 1 document » mais « 2 documents ».
+const pluriel = (n, singulier, plurielMot = singulier + 's') => `${n} ${n > 1 ? plurielMot : singulier}`
+
 const app = createApp(App)
 app.use(createPinia())
 app.use(router)
@@ -30,8 +33,9 @@ async function bootstrap() {
       // `notice` et non `error` : c'est un avertissement, pas une panne, et il ne
       // doit pas être effacé par le premier cycle de réplication qui écrit dans
       // `error` via guard().
+      const verbe = migration.failed.length > 1 ? 'n’ont pas pu être convertis' : 'n’a pas pu être converti'
       library.notice =
-        `Migration incomplète : ${migration.failed.length} document(s) n'ont pas pu être convertis. ` +
+        `Migration incomplète : ${pluriel(migration.failed.length, 'document', 'documents')} ${verbe}. ` +
         `Ils sont toujours en base et seront retentés au prochain démarrage.`
     }
   } catch (err) {

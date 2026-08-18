@@ -6,6 +6,9 @@ import { buildExport, exportFilename, exportScope, shareOrDownload } from '@/ser
 const library = useLibraryStore()
 const feedback = ref('')
 
+// Petit helper d'accord : « 1 morceau » mais « 2 morceaux ».
+const pluriel = (n, singulier, plurielMot = singulier + 's') => `${n} ${n > 1 ? plurielMot : singulier}`
+
 const scope = computed(() =>
   exportScope({
     query: library.query,
@@ -22,13 +25,13 @@ async function exportNow() {
   try {
     await shareOrDownload(payload, exportFilename(scope.value, now))
     const parts = [
-      `${payload.tracks.length} morceaux`,
-      `${payload.artists.length} artistes`,
+      pluriel(payload.tracks.length, 'morceau', 'morceaux'),
+      pluriel(payload.artists.length, 'artiste', 'artistes'),
     ]
     // Les entrées d'un type inattendu (anciens documents non migrés) sont bien
     // dans le fichier : les taire dans le message reviendrait à les faire
     // disparaître là où on a justement tout fait pour qu'elles ne disparaissent pas.
-    if (payload.others.length) parts.push(`${payload.others.length} entrées non classées`)
+    if (payload.others.length) parts.push(pluriel(payload.others.length, 'entrée non classée', 'entrées non classées'))
     feedback.value = `${parts.join(', ')} — exportés.`
   } catch (err) {
     feedback.value = `Export impossible : ${err.message}`

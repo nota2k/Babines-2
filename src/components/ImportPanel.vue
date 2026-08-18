@@ -4,6 +4,16 @@ import { useImportStore } from '@/stores/import.js'
 const imports = useImportStore()
 const PLATFORMS = ['spotify', 'deezer', 'youtube']
 
+// Sur le modèle de syncLabel dans library.js : la classe CSS reste indexée sur
+// la valeur brute, seul l'affichage est traduit.
+const STATUS_LABELS = {
+  running: 'en cours',
+  ok: 'terminé',
+  partial: 'partiel',
+  error: 'échec',
+}
+const statusLabel = (status) => STATUS_LABELS[status] || status
+
 // Le job récapitulatif de résolution des entrées en attente porte la
 // plateforme fictive « resolve » : ENDPOINTS n'a pas d'entrée pour elle, donc
 // importPlatform('resolve') lèverait une TypeError. On route ce job vers
@@ -38,7 +48,7 @@ function retry(job) {
     <ul v-else class="jobs">
       <li v-for="job in [...imports.jobs].reverse()" :key="job.id" :class="job.status">
         <strong>{{ job.label }}</strong>
-        <span class="status">{{ job.status }}</span>
+        <span class="status">{{ statusLabel(job.status) }}</span>
         <span v-if="job.httpStatus"> — HTTP {{ job.httpStatus }}</span>
         <span class="time">{{ (job.finishedAt || job.startedAt).slice(11, 19) }}</span>
         <p class="message">{{ job.message || 'en cours…' }}</p>

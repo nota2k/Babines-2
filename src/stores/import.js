@@ -4,6 +4,9 @@ import { ADAPTERS, toTrackDoc } from '@/services/normalize.js'
 import { mergeTrackDoc } from '@/services/merge.js'
 import { useLibraryStore } from '@/stores/library.js'
 
+// Petit helper d'accord : « 1 morceau » mais « 2 morceaux ».
+const pluriel = (n, singulier, plurielMot = singulier + 's') => `${n} ${n > 1 ? plurielMot : singulier}`
+
 export class ImportError extends Error {
   constructor(message, { status = 0, url = '' } = {}) {
     super(message)
@@ -185,15 +188,14 @@ export const useImportStore = defineStore('import', {
 
       const notes = []
       if (failures.length) notes.push(`échec sur : ${failures.join(', ')}`)
-      if (writeFailures) notes.push(`${writeFailures} échec(s) d'écriture en base`)
+      if (writeFailures) notes.push(`${pluriel(writeFailures, 'échec', 'échecs')} d'écriture en base`)
 
+      const importedLabel = pluriel(imported, 'morceau importé', 'morceaux importés')
       this.finishJob(job, {
         imported,
         failed: failures.length + writeFailures,
         status: notes.length ? 'partial' : 'ok',
-        message: notes.length
-          ? `${imported} morceaux importés, ${notes.join(', ')}`
-          : `${imported} morceaux importés`,
+        message: notes.length ? `${importedLabel}, ${notes.join(', ')}` : importedLabel,
       })
       return job
     },
@@ -250,7 +252,7 @@ export const useImportStore = defineStore('import', {
           failed: failures,
           status: resolved > 0 ? 'partial' : 'error',
           httpStatus: lastStatus,
-          message: `${resolved} entrée(s) complétée(s), ${failures} en échec`,
+          message: `${pluriel(resolved, 'entrée complétée', 'entrées complétées')}, ${failures} en échec`,
         })
       }
 
