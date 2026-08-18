@@ -1,0 +1,209 @@
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { setActivePinia, createPinia } from 'pinia'
+import PouchDB from 'pouchdb'
+import memoryAdapter from 'pouchdb-adapter-memory'
+import { createDb, setDb, getDb } from '@/services/db.js'
+import { useImportStore } from '@/stores/import.js'
+import { useLibraryStore } from '@/stores/library.js'
+
+PouchDB.plugin(memoryAdapter)
+
+const BASE = 'https://n8n.test/webhook'
+let counter = 0
+
+const jsonResponse = (body) => ({ ok: true, status: 200, json: async () => body })
+const errorResponse = (status) => ({ ok: false, status, json: async () => ({}) })
+
+// Formes réellement émises par les workflows (voir docs/n8n/).
+const SPOTIFY_PLAYLISTS = [
+  { name: 'BAT BEAT', description: '', tracks: { total: 2 }, uri: 'spotify:playlist:PL_A', id: 'PL_A', href: 'https://api.spotify.com/v1/playlists/PL_A' },
+]
+const SPOTIFY_TRACKS = [
+  { track: { artist: 'Talking Heads', title: 'Burning Down the House', added_at: '2025-04-07T14:34:51Z', album: 'Survival', track_id: 'X1' } },
+  { track: { artist: 'Talking Heads', title: 'Once in a Lifetime', added_at: '2025-04-08T10:00:00Z', album: 'Remain in Light', track_id: 'X2' } },
+]
+const YOUTUBE_ITEMS = [
+  { playlistId: 'PL_Y', videoId: 'UBS4Gi1y_nc', title: 'Aphex Twin - Windowlicker (Official Video)', description: '', thumbnail_url: '' },
+]
+
+beforeEach(() => {
+  setActivePinia(createPinia())
+  setDb(createDb(`import-db-${counter++}`, { adapter: 'memory' }))
+  vi.stubEnv('VITE_N8N_BASE_URL', BASE)
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
+})
+
+describe('endpoints réels', () => {
+  it('appelle les URLs des workflows existants, pas un contrat inventé', async () => {
+    const fetchMock = vi.fn(async (url) =>
+      url.includes('/getplaylist') ? jsonResponse(SPOTIFY_PLAYLISTS) : jsonResponse(SPOTIFY_TRACKS),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useImportStore().importPlatform('spotify')
+
+    expect(fetchMock.mock.calls.map((c) => c[0])).toEqual([
+      `${BASE}/getplaylist`,
+      `${BASE}/playlist?id=PL_A`,
+      `${BASE}/babines/liked?cache=false`,
+    ])
+  })
+
+  it('appelle les URLs YouTube et n’essaie pas d’importer des favoris inexistants', async () => {
+    const fetchMock = vi.fn(async (url) =>
+      url.endsWith('/youtube') ? jsonResponse([{ id: 'PL_Y', snippet: { title: 'Trouvailles' }, contentDetails: { itemCount: 1 } }]) : jsonResponse(YOUTUBE_ITEMS),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await useImportStore().importPlatform('youtube')
+
+    expect(fetchMock.mock.calls.map((c) => c[0])).toEqual([
+      `${BASE}/youtube`,
+      `${BASE}/youtube/items?playlistId=PL_Y`,
+    ])
+  })
+})
+
+describe('écriture en base', () => {
+  it('traduit la forme imbriquée de Spotify en document du modèle unique', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(SPOTIFY_TRACKS)))
+    await useImportStore().importPlaylist('spotify', { playlistId: 'PL_A', playlistName: 'BAT BEAT' })
+
+    const doc = await getDb().get('track:spotify:X1')
+    expect(doc.type).toBe('track')
+    expect(doc.title).toBe('Burning Down the House')
+    expect(doc.artist).toBe('Talking Heads')
+    expect(doc.sources[0].playlistName).toBe('BAT BEAT')
+    expect(doc.sources[0].url).toBe('https://open.spotify.com/track/X1')
+    expect(doc.matchKey).toBe('talking heads::burning down the house')
+  })
+
+  it('découpe le titre brut d’une vidéo YouTube et conserve l’original', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(YOUTUBE_ITEMS)))
+    await useImportStore().importPlaylist('youtube', { playlistId: 'PL_Y', playlistName: 'Trouvailles' })
+
+    const doc = await getDb().get('track:youtube:UBS4Gi1y_nc')
+    expect(doc.title).toBe('Windowlicker')
+    expect(doc.artist).toBe('Aphex Twin')
+    expect(doc.sources[0].rawTitle).toBe('Aphex Twin - Windowlicker (Official Video)')
+  })
+
+  it('RÉIMPORTER NE DÉTRUIT NI LA NOTE NI LES TAGS', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(SPOTIFY_TRACKS)))
+    const importStore = useImportStore()
+    const library = useLibraryStore()
+
+    await importStore.importPlaylist('spotify', { playlistId: 'PL_A', playlistName: 'BAT BEAT' })
+    await library.load()
+    await library.updateEntry('track:spotify:X1', { note: 'vu au Petit Bain', tags: ['funk'] })
+
+    await importStore.importPlaylist('spotify', { playlistId: 'PL_A', playlistName: 'BAT BEAT' })
+
+    const doc = await getDb().get('track:spotify:X1')
+    expect(doc.note).toBe('vu au Petit Bain')
+    expect(doc.tags).toEqual(['funk'])
+  })
+
+  it('ajoute une provenance quand le morceau vient d’une seconde playlist', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(SPOTIFY_TRACKS)))
+    const store = useImportStore()
+    await store.importPlaylist('spotify', { playlistId: 'PL_A', playlistName: 'BAT BEAT' })
+    await store.importPlaylist('spotify', { playlistId: 'PL_B', playlistName: 'VOYAGER' })
+
+    const doc = await getDb().get('track:spotify:X1')
+    expect(doc.sources).toHaveLength(2)
+    expect(doc.sources.map((s) => s.playlistName)).toEqual(['BAT BEAT', 'VOYAGER'])
+  })
+})
+
+describe('erreurs — jamais de liste vide silencieuse', () => {
+  it('consigne le code HTTP et la plateforme', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => errorResponse(500)))
+    const store = useImportStore()
+    await store.importPlatform('spotify')
+
+    const job = store.jobs.at(-1)
+    expect(job.status).toBe('error')
+    expect(job.httpStatus).toBe(500)
+    expect(job.platform).toBe('spotify')
+    expect(job.message).toMatch(/500/)
+    expect(job.finishedAt).toBeTruthy()
+  })
+
+  it('consigne une panne réseau', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch') }))
+    const store = useImportStore()
+    await store.importPlatform('deezer')
+
+    const job = store.jobs.at(-1)
+    expect(job.status).toBe('error')
+    expect(job.httpStatus).toBe(0)
+  })
+
+  it('rapporte un import partiel avec le décompte', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url) => {
+      if (url.includes('/getplaylist')) return jsonResponse([...SPOTIFY_PLAYLISTS, { id: 'PL_KO', name: 'CASSÉE', tracks: { total: 3 } }])
+      if (url.includes('PL_KO')) return errorResponse(502)
+      return jsonResponse(SPOTIFY_TRACKS)
+    }))
+    const store = useImportStore()
+    await store.importPlatform('spotify')
+
+    const job = store.jobs.at(-1)
+    expect(job.status).toBe('partial')
+    expect(job.imported).toBe(4)
+    expect(job.failed).toBe(1)
+    expect(job.message).toMatch(/CASSÉE/)
+  })
+})
+
+describe('resolvePending', () => {
+  const pendingDoc = (externalId, note = '') => ({
+    _id: `track:youtube:${externalId}`,
+    type: 'track',
+    title: '',
+    artist: '',
+    album: '',
+    matchKey: '',
+    pending: true,
+    sources: [{ platform: 'youtube', playlistId: null, playlistName: null, externalId, addedAt: null, url: `https://youtu.be/${externalId}`, rawTitle: null }],
+    note,
+    tags: [],
+    createdAt: '2026-08-18T14:00:00Z',
+    updatedAt: '2026-08-18T14:00:00Z',
+  })
+
+  it('enrichit les entrées capturées hors ligne', async () => {
+    const db = getDb()
+    await db.put(pendingDoc('UBS4Gi1y_nc', 'entendu en soirée'))
+
+    const fetchMock = vi.fn(async () => jsonResponse({ videoId: 'UBS4Gi1y_nc', title: 'Aphex Twin - Windowlicker (Official Video)' }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const resolved = await useImportStore().resolvePending()
+
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BASE}/resolve/youtube?id=UBS4Gi1y_nc`)
+    const doc = await db.get('track:youtube:UBS4Gi1y_nc')
+    expect(resolved).toBe(1)
+    expect(doc.pending).toBe(false)
+    expect(doc.title).toBe('Windowlicker')
+    expect(doc.artist).toBe('Aphex Twin')
+    expect(doc.note).toBe('entendu en soirée')
+  })
+
+  it('laisse l’entrée en attente si la résolution échoue, sans rien perdre', async () => {
+    const db = getDb()
+    await db.put(pendingDoc('ZZZ', 'à réécouter'))
+    vi.stubGlobal('fetch', vi.fn(async () => errorResponse(404)))
+
+    const resolved = await useImportStore().resolvePending()
+    const doc = await db.get('track:youtube:ZZZ')
+    expect(resolved).toBe(0)
+    expect(doc.pending).toBe(true)
+    expect(doc.note).toBe('à réécouter')
+  })
+})
