@@ -41,15 +41,83 @@ async function exportNow() {
 
 <template>
   <div class="export">
-    <button type="button" @click="exportNow">
-      Exporter {{ scope === 'library' ? 'toute la bibliothèque' : 'la sélection' }} ({{ library.filtered.length }})
+    <button
+      type="button"
+      class="pastille"
+      :title="`Exporter ${scope === 'library' ? 'toute la bibliothèque' : 'la sélection'} (${library.filtered.length})`"
+      @click="exportNow"
+    >
+      <img src="../assets/dog_3.svg" alt="" class="dog" />
+      <span class="visually-hidden">
+        Exporter {{ scope === 'library' ? 'toute la bibliothèque' : 'la sélection' }} ({{ library.filtered.length }})
+      </span>
     </button>
+    <span class="label">Expaw</span>
     <span v-if="feedback" class="feedback" role="status">{{ feedback }}</span>
   </div>
 </template>
 
 <style scoped>
-.export { display: flex; align-items: center; gap: 1em; flex-wrap: wrap; margin: 0.5em 0; }
-button { padding: 0.6em 1.2em; border: 2px solid black; background: #a98be9; cursor: pointer; }
-.feedback { font-size: 0.9em; }
+.export {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4em;
+  text-align: center;
+}
+
+.pastille {
+  width: 64px;
+  height: 64px;
+  border-radius: 100%;
+  border: 1px solid var(--trait);
+  background: var(--jaune);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s linear;
+  overflow: hidden;
+}
+
+.pastille:hover .dog,
+.pastille:focus-visible .dog {
+  animation: helloDogs 0.8s infinite alternate-reverse ease-in-out both;
+}
+
+@keyframes helloDogs {
+  0% {
+    transform: rotate(-16deg);
+  }
+  100% {
+    transform: rotate(4deg);
+  }
+}
+
+.dog {
+  width: 34px;
+  height: auto;
+}
+
+.label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.feedback {
+  font-size: 0.8em;
+  color: var(--encre-douce);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 </style>
