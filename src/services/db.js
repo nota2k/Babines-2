@@ -53,19 +53,51 @@ export function resolveRemoteUrl(url, origin = globalThis.location?.origin ?? ''
   return /^https?:/i.test(url) ? url : new URL(url, origin).href
 }
 
+// Handle de la réplication continue en cours, un seul à la fois. Sans ce
+// singleton, chaque appel à startReplication (nouvelle connexion, retour de
+// réseau…) en ouvrait un de plus sans jamais fermer les précédents : ils
+// survivaient tous, chacun doublant le trafic vers l'hébergement partagé et
+// écrivant syncStatus à travers sa propre fermeture.
+let activeReplication = null
+
+/** Arrête la réplication en cours, s'il y en a une. Rejouable sans risque. */
+export function stopReplication() {
+  if (activeReplication) {
+    activeReplication.cancel()
+    activeReplication = null
+  }
+}
+
 export function startReplication(local, { url, dbName, onStatus = () => {} }) {
+  // Une réplication déjà en vol doit être fermée avant d'en ouvrir une
+  // autre : c'est ce qui garantit qu'il n'y en a jamais deux en même temps,
+  // quel que soit l'appelant (connexion, reconnexion réseau…).
+  stopReplication()
+
   if (!url) {
     onStatus('local-only')
     return null
   }
   const remote = new PouchDB(`${resolveRemoteUrl(url).replace(/\/+$/, '')}/${dbName}`)
-  return local
+
+  const surErreur = (err) => {
+    const status = classifyReplicationError(err)
+    onStatus(status)
+    // Une erreur d'authentification ne se résout pas en réessayant : sans cet
+    // arrêt, `retry: true` boucle sur le 401 indéfiniment, et la reconnexion
+    // suivante empilerait une deuxième réplication par-dessus celle-ci.
+    if (status === 'auth-error') stopReplication()
+  }
+
+  activeReplication = local
     .sync(remote, { live: true, retry: true })
     .on('change', () => onStatus('pending'))
-    .on('paused', (err) => onStatus(err ? classifyReplicationError(err) : 'idle'))
+    .on('paused', (err) => (err ? surErreur(err) : onStatus('idle')))
     .on('active', () => onStatus('pending'))
-    .on('denied', (err) => onStatus(classifyReplicationError(err)))
-    .on('error', (err) => onStatus(classifyReplicationError(err)))
+    .on('denied', surErreur)
+    .on('error', surErreur)
+
+  return activeReplication
 }
 
 let instance = null

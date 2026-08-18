@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import PouchDB from 'pouchdb'
 import memoryAdapter from 'pouchdb-adapter-memory'
 import {
@@ -6,6 +6,7 @@ import {
   ensureIndexes,
   classifyReplicationError,
   startReplication,
+  stopReplication,
   resolveRemoteUrl,
 } from '@/services/db.js'
 
@@ -114,5 +115,88 @@ describe('resolveRemoteUrl', () => {
     // ferait echouer le test par « OpenError: /db/babines/LOCK ».
     const distante = new PouchDB(`${resolveRemoteUrl('/db', ORIGINE)}/babines`)
     expect(distante.adapter).toBe('https')
+  })
+})
+
+// Le handle réel (local.sync(...)) est simulé : il ne faut pas qu'un test
+// déclenche une vraie tentative réseau vers un hôte inexistant.
+function fauxHandleSync() {
+  const handlers = {}
+  const handle = {
+    on(event, cb) {
+      handlers[event] = cb
+      return handle
+    },
+    cancel: vi.fn(),
+    emettre(event, ...args) {
+      handlers[event]?.(...args)
+    },
+  }
+  return handle
+}
+
+describe('startReplication — une seule réplication à la fois', () => {
+  afterEach(() => {
+    // Le handle actif vit dans un singleton du module : sans ce nettoyage,
+    // un test laisserait un cancel() en attente pour le suivant.
+    stopReplication()
+  })
+
+  it('annule la réplication précédente avant d’en démarrer une nouvelle', () => {
+    const handleA = fauxHandleSync()
+    const handleB = fauxHandleSync()
+    const local = { sync: vi.fn().mockReturnValueOnce(handleA).mockReturnValueOnce(handleB) }
+
+    startReplication(local, { url: 'https://exemple.test', dbName: 'babines' })
+    expect(handleA.cancel).not.toHaveBeenCalled()
+
+    startReplication(local, { url: 'https://exemple.test', dbName: 'babines' })
+    expect(handleA.cancel).toHaveBeenCalledTimes(1)
+    expect(handleB.cancel).not.toHaveBeenCalled()
+  })
+
+  it('stopReplication annule le handle en cours et est rejouable sans erreur', () => {
+    const handle = fauxHandleSync()
+    const local = { sync: vi.fn().mockReturnValue(handle) }
+
+    startReplication(local, { url: 'https://exemple.test', dbName: 'babines' })
+    stopReplication()
+    expect(handle.cancel).toHaveBeenCalledTimes(1)
+
+    expect(() => stopReplication()).not.toThrow()
+    expect(handle.cancel).toHaveBeenCalledTimes(1)
+  })
+
+  it('arrête la réplication elle-même quand le statut devient une erreur d’authentification', () => {
+    const handle = fauxHandleSync()
+    const local = { sync: vi.fn().mockReturnValue(handle) }
+    const statuts = []
+
+    startReplication(local, {
+      url: 'https://exemple.test',
+      dbName: 'babines',
+      onStatus: (s) => statuts.push(s),
+    })
+
+    handle.emettre('error', { status: 401 })
+
+    expect(statuts).toEqual(['auth-error'])
+    expect(handle.cancel).toHaveBeenCalledTimes(1)
+  })
+
+  it('une reconnexion après un 401 ne laisse jamais deux réplications actives', () => {
+    const handleA = fauxHandleSync()
+    const handleB = fauxHandleSync()
+    const local = { sync: vi.fn().mockReturnValueOnce(handleA).mockReturnValueOnce(handleB) }
+
+    startReplication(local, { url: 'https://exemple.test', dbName: 'babines' })
+    handleA.emettre('error', { status: 401 })
+    expect(handleA.cancel).toHaveBeenCalledTimes(1)
+
+    // Reconnexion : un deuxième appel ne doit pas retenter d'annuler le
+    // premier handle une seconde fois (déjà arrêté par le 401 lui-même).
+    startReplication(local, { url: 'https://exemple.test', dbName: 'babines' })
+    expect(handleA.cancel).toHaveBeenCalledTimes(1)
+    expect(handleB.cancel).not.toHaveBeenCalled()
   })
 })
