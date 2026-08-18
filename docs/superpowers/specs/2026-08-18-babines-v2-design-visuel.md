@@ -10,22 +10,49 @@ Une identité nette, dense, un peu brutaliste : fond crème, surfaces blanches c
 
 ## Décision d'adaptation, à connaître avant de lire la suite
 
-**La maquette dessine l'ancienne architecture** : une colonne de playlists, une navigation « Spawtify / Youtruffe / Appariement », un tableau de morceaux par playlist.
+*Amendée le 2026-08-18 à la demande de la partenaire humaine : « je veux garder aussi la navigation
+par playlist ».*
 
-La v2 a tranché l'inverse (décision 1 de la spec) : le bloc-note est central, les playlists ne sont plus des écrans mais des filtres, et les plateformes ne sont plus des sections mais des provenances.
+La maquette dessine une colonne de playlists cliquables. La spec v2 avait fait des playlists un
+simple filtre (décision 1 : le bloc-note est central). **Les deux tiennent ensemble** — et c'est la
+colonne de la maquette qui gagne.
 
-**On reprend donc le langage visuel de la maquette, pas son plan de navigation.** Réintroduire la navigation par playlists défferait la décision structurante du projet.
+La raison est qu'il n'y a pas de contradiction technique : choisir une playlist *reste* un filtre
+sur `sources[].playlistName`. Le modèle de données ne change pas, le getter `library.playlists`
+existe déjà, et le store expose déjà `playlist` comme critère. Ce qui change est la présentation :
+une colonne parcourable au lieu d'une liste déroulante noyée dans la barre de filtres. C'est
+nettement plus utilisable, et ça ne coûte rien au bloc-note — « Tous mes morceaux » reste en tête de
+liste et reste l'état par défaut.
+
+Ce qu'on ne reprend **pas** de la maquette : la navigation par plateforme en haut à droite
+(« Spawtify / Youtruffe / Appariement »). Les plateformes restent des provenances affichées en
+pastilles sur chaque entrée, et un filtre parmi d'autres — pas des sections séparées. C'est cette
+séparation-là que la v2 a abandonnée, et à raison : un morceau présent sur deux plateformes
+n'appartient à aucune des deux sections.
 
 La correspondance retenue :
 
 | Maquette | v2 |
 |---|---|
 | En-tête noir + recherche + décompte | `AppHeader` enrichi : logo, champ de recherche global, décompte |
-| Colonne « Playlists » | Colonne de filtres : type, plateforme, playlist, tag |
+| Colonne « Playlists » | **Conservée telle quelle** : liste parcourable, « Tous mes morceaux » en tête, décompte par playlist, sélection = filtre `library.playlist` |
+| Navigation par plateforme | Non reprise — les plateformes restent des provenances et un filtre |
 | Carte « Noter une découverte » | `QuickAdd` — un seul champ, pas trois : la v2 devine ce qu'on lui colle |
 | Tableau de morceaux | `LibraryList` / `EntryRow` |
 | Trois pastilles rondes à droite | Sources, Doublons, Export |
 | Pied de page | Identique |
+
+### La colonne des playlists, en détail
+
+- Alimentée par le getter `library.playlists` (noms uniques tirés de `sources[]`), avec en tête une
+  entrée « Tous mes morceaux » qui vide le filtre.
+- Le décompte de chaque playlist se calcule sur les entrées dont une provenance porte ce nom.
+- La sélection écrit dans `library.playlist` — donc la barre de filtres et la colonne restent
+  cohérentes, quelle que soit celle qu'on utilise.
+- Les autres filtres (type, plateforme, tag, recherche) continuent de s'appliquer **par-dessus** la
+  playlist choisie : on peut chercher « live » dans une playlist précise.
+- Une bibliothèque sans playlist importée n'affiche que « Tous mes morceaux » — la colonne ne doit
+  pas devenir un trou vide quand rien n'est encore importé.
 
 Les trois pastilles retrouvent ainsi un usage réel : `dog_1` pour les sources (l'import), `dog_2` pour les doublons, `dog_3` pour l'export — dont le libellé « Expaw » de la maquette mérite d'être gardé.
 
