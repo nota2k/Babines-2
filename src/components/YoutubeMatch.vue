@@ -27,6 +27,8 @@ function reinitialiser() {
   playlists.value = []
   playlistId.value = ''
   dejaDedans.value = null
+  cherche.value = false
+  envoie.value = false
   message.value = ''
 }
 
@@ -34,7 +36,12 @@ function reinitialiser() {
 // précédent sous le titre du suivant, et un envoi partirait sur la mauvaise vidéo.
 watch(() => props.entry._id, reinitialiser)
 
+// Compteur incrémenté à chaque contrôle : couvre le cas où deux sélections de
+// playlist se succèdent vite et où la première réponse arrive après la seconde.
+let generationControle = 0
+
 async function chercher() {
+  const pour = props.entry._id
   cherche.value = true
   message.value = ''
   candidats.value = []
@@ -42,24 +49,30 @@ async function chercher() {
   dejaDedans.value = null
   try {
     const trouves = await imports.searchVideos(requete.value)
+    if (props.entry._id !== pour) return // l'entree a change sous la requete
     candidats.value = trouves
     if (!trouves.length) message.value = `Aucune vidéo trouvée pour « ${requete.value} ».`
   } catch (err) {
+    if (props.entry._id !== pour) return
     message.value = `Recherche impossible : ${err.message}`
   } finally {
-    cherche.value = false
+    if (props.entry._id === pour) cherche.value = false
   }
 }
 
 async function choisir(candidat) {
+  const pour = props.entry._id
   choisie.value = candidat
   dejaDedans.value = null
   message.value = ''
   if (playlists.value.length) return controler()
   try {
-    playlists.value = await imports.fetchPlaylists('youtube')
-    if (!playlists.value.length) message.value = 'Aucune playlist YouTube à alimenter.'
+    const trouvees = await imports.fetchPlaylists('youtube')
+    if (props.entry._id !== pour) return // l'entree a change sous la requete
+    playlists.value = trouvees
+    if (!trouvees.length) message.value = 'Aucune playlist YouTube à alimenter.'
   } catch (err) {
+    if (props.entry._id !== pour) return
     message.value = `Playlists indisponibles : ${err.message}`
   }
 }
@@ -69,17 +82,24 @@ async function choisir(candidat) {
  * rien : le contrôle éclaire l'envoi, il ne le garde pas.
  */
 async function controler() {
+  const pour = props.entry._id
+  const gen = ++generationControle
   dejaDedans.value = null
+  message.value = ''
   if (!choisie.value || !playlistId.value) return
   try {
-    dejaDedans.value = await imports.playlistContains(playlistId.value, choisie.value.videoId)
+    const resultat = await imports.playlistContains(playlistId.value, choisie.value.videoId)
+    if (props.entry._id !== pour || gen !== generationControle) return
+    dejaDedans.value = resultat
   } catch {
+    if (props.entry._id !== pour || gen !== generationControle) return
     message.value = 'Contrôle impossible : l’envoi reste possible, au risque d’un doublon.'
   }
 }
 
 async function envoyer() {
   if (!choisie.value || !playlistId.value) return
+  const pour = props.entry._id
   envoie.value = true
   message.value = ''
   try {
@@ -87,16 +107,18 @@ async function envoyer() {
       videoId: choisie.value.videoId,
       playlistId: playlistId.value,
     })
+    if (props.entry._id !== pour) return // l'entree a change pendant l'envoi
     message.value = `Ajoutée à ${playlistChoisie.value?.name || 'la playlist'}.`
     candidats.value = []
     choisie.value = null
     dejaDedans.value = null
   } catch (err) {
+    if (props.entry._id !== pour) return
     // Vignette et playlist restent sélectionnées : réessayer ne doit pas coûter
     // un nouveau parcours.
     message.value = `Envoi impossible : ${err.message}`
   } finally {
-    envoie.value = false
+    if (props.entry._id === pour) envoie.value = false
   }
 }
 </script>
@@ -106,7 +128,14 @@ async function envoyer() {
     <h3>Trouver la vidéo</h3>
 
     <div class="lancer">
-      <button type="button" class="yellow" :disabled="cherche" @click="chercher">
+      <button
+        type="button"
+        class="yellow"
+        :disabled="cherche"
+        aria-label="Chercher la vidéo"
+        title="Chercher la vidéo"
+        @click="chercher"
+      >
         <div class="swap-icon"></div>
       </button>
       <span class="requete">{{ requete }}</span>
@@ -138,6 +167,12 @@ async function envoyer() {
       </label>
 
       <p v-if="dejaDedans?.found" class="avertissement">Déjà dans cette playlist.</p>
+      <p v-else-if="dejaDedans && dejaDedans.checked === 0" class="controle">
+        Contrôle sans résultat : la playlist n’a renvoyé aucun élément.
+      </p>
+      <p v-else-if="dejaDedans && dejaDedans.checked === 1" class="controle">
+        Absente de l’unique élément examiné.
+      </p>
       <p v-else-if="dejaDedans" class="controle">
         Absente des {{ dejaDedans.checked }} premiers éléments examinés.
       </p>
@@ -147,8 +182,7 @@ async function envoyer() {
       </button>
     </div>
 
-    <p v-if="cherche" class="feedback" role="status">Recherche…</p>
-    <p v-else-if="message" class="feedback" role="status">{{ message }}</p>
+    <p class="feedback" role="status">{{ cherche ? 'Recherche…' : message }}</p>
   </section>
 </template>
 
@@ -240,6 +274,13 @@ button.yellow:hover .swap-icon {
 .candidat.actif {
   border-color: var(--encre);
   outline: 2px solid var(--jaune);
+}
+
+/* Distinct de .actif, dont l'outline signifie déjà « sélectionné » : le focus
+   clavier ne doit pas se confondre avec la sélection. */
+.candidat:focus-visible {
+  outline: 3px solid var(--alerte);
+  outline-offset: 2px;
 }
 
 .candidat img {
