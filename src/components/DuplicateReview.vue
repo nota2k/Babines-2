@@ -16,10 +16,8 @@ async function merge(keep, drop) {
 
 const platformsOf = (entry) => [...new Set((entry.sources || []).map((s) => s.platform))].join(', ')
 
-const mergeLabel = (entry, group) =>
-  group.length > 2
-    ? `Garder « ${displayTitle(entry)} » et fusionner la suivante`
-    : `Garder « ${displayTitle(entry)} » et fusionner l'autre`
+/** L'entrée qui sera absorbée si l'on garde `entry` : la première autre du groupe. */
+const otherOf = (group, entry) => group.find((e) => e._id !== entry._id)
 </script>
 
 <template>
@@ -32,7 +30,7 @@ const mergeLabel = (entry, group) =>
 
     <p v-if="!library.duplicateGroups.length">Aucun doublon probable.</p>
 
-    <div v-for="group in library.duplicateGroups" :key="group[0].matchKey" class="group">
+    <div v-for="group in library.duplicateGroups" :key="`${group[0].type}:${group[0].matchKey}`" class="group">
       <h3>{{ group[0].matchKey }}</h3>
       <ul>
         <li v-for="entry in group" :key="entry._id">
@@ -47,9 +45,9 @@ const mergeLabel = (entry, group) =>
           :key="`keep-${entry._id}`"
           type="button"
           :disabled="busy !== ''"
-          @click="merge(entry, group.find((e) => e._id !== entry._id))"
+          @click="merge(entry, otherOf(group, entry))"
         >
-          {{ mergeLabel(entry, group) }}
+          Garder « {{ displayTitle(entry) }} » et y fusionner « {{ displayTitle(otherOf(group, entry)) }} »
         </button>
       </div>
     </div>
