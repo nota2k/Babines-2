@@ -104,6 +104,24 @@ describe('filtres', () => {
     expect(store.platforms).toEqual(['spotify', 'youtube'])
     expect(store.tags).toEqual(['électro'])
   })
+
+  it('compte les entrées par playlist, une seule fois même si une entrée y figure via plusieurs provenances', async () => {
+    // Une entrée dont deux provenances partagent la même playlist ne doit
+    // compter que pour une seule entrée dans le décompte de cette playlist.
+    await getDb().put({
+      _id: 'track:spotify:X2bbbbbbbbbbbbbbbbbbbb',
+      ...track({
+        title: 'This Must Be the Place',
+        matchKey: 'talking heads::this must be the place',
+        sources: [
+          { platform: 'spotify', playlistId: 'PL_A', playlistName: 'BAT BEAT', externalId: 'X2bbbbbbbbbbbbbbbbbbbb', addedAt: null, url: null, rawTitle: null },
+          { platform: 'youtube', playlistId: 'PL_A2', playlistName: 'BAT BEAT', externalId: 'Y3', addedAt: null, url: null, rawTitle: null },
+        ],
+      }),
+    })
+    await store.load()
+    expect(store.playlistCounts).toEqual({ 'BAT BEAT': 2, Trouvailles: 1 })
+  })
 })
 
 describe('capture', () => {

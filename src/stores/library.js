@@ -56,6 +56,20 @@ export const useLibraryStore = defineStore('library', {
     },
 
     playlists: (state) => uniqueSorted(state.entries.flatMap((e) => (e.sources || []).map((s) => s.playlistName))),
+
+    /**
+     * Décompte d'entrées par playlist, pour la colonne de navigation. Une
+     * entrée présente deux fois dans la même playlist via deux provenances
+     * différentes ne doit compter qu'une fois.
+     */
+    playlistCounts(state) {
+      const counts = {}
+      for (const entry of state.entries) {
+        const names = new Set((entry.sources || []).map((s) => s.playlistName).filter(Boolean))
+        for (const name of names) counts[name] = (counts[name] || 0) + 1
+      }
+      return counts
+    },
     platforms: (state) => uniqueSorted(state.entries.flatMap((e) => (e.sources || []).map((s) => s.platform))),
     tags: (state) => uniqueSorted(state.entries.flatMap((e) => e.tags || [])),
     pendingEntries: (state) => state.entries.filter((e) => e.pending),
