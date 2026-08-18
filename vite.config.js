@@ -60,7 +60,11 @@ export default defineConfig({
       '/db': {
         target: process.env.BABINES_SERVER_URL || 'http://127.0.0.1:5984',
         changeOrigin: true,
-        rewrite: (chemin) => chemin.replace(/^\/db/, ''),
+        // '/' et non '' : express-pouchdb (BABINES_BASE_PATH par défaut à
+        // '/' en local) attend une route qui commence par '/', pas une
+        // chaîne vide — une requête vers /db/babines doit devenir /babines,
+        // jamais babines sans barre initiale.
+        rewrite: (chemin) => chemin.replace(/^\/db/, '') || '/',
       },
     },
   },
