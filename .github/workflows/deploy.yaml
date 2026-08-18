@@ -1,11 +1,13 @@
 ---
 name: 'deploy'
 
-# yamllint disable-line rule:truthy
+# Déploiement Dokku désactivé : il partait sur chaque push vers master, en
+# même temps que o2switch.yml, vers un hébergement différent — et échouait
+# faute de clé autorisée sur dokku@lehavre. o2switch est la cible retenue.
+# Ce workflow reste lançable à la main depuis l'onglet Actions ; pour le
+# réactiver automatiquement, remettre le bloc `push: branches: [master]`.
 on:
-  push:
-    branches:
-      - master
+  workflow_dispatch:
 
 jobs:
   deploy:
