@@ -26,7 +26,12 @@ jobs:
         run: npm run build
         env:
           VITE_COUCHDB_URL: ${{ secrets.VITE_COUCHDB_URL }}
-          # ajoute ici toute autre variable VITE_/VUE_APP_ nécessaire au build
+          # Sans elle, base() renvoie une chaîne vide et tout ce qui passe par
+          # n8n — imports Spotify/YouTube, recherche de vidéos, ajout à une
+          # playlist — répond « n8n n'est pas configuré » sur le site déployé.
+          VITE_N8N_BASE_URL: ${{ secrets.VITE_N8N_BASE_URL }}
+          # VITE_COUCHDB_DB n'est pas passée : le code retombe sur « babines »,
+          # qui est la valeur utilisée. À ajouter le jour où elle en diffère.
  
       - name: Déployer sur o2switch via rsync/SSH
         uses: burnett01/rsync-deployments@7.0.1
