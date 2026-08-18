@@ -24,11 +24,14 @@ export async function ensureIndexes(db) {
   }
 }
 
-export function classifyReplicationError(err = {}) {
+export function classifyReplicationError(err = {}, online = globalThis.navigator?.onLine ?? true) {
   if (err.status === 401 || err.status === 403) return 'auth-error'
-  if (err.status === 0) return 'offline'
   const message = String(err.message || '')
-  if (/failed to fetch|networkerror|network error|offline/i.test(message)) return 'offline'
+  const looksLikeNetwork = err.status === 0 || /failed to fetch|networkerror|network error|offline/i.test(message)
+  // Un échec réseau alors que le navigateur se dit en ligne n'est pas une coupure :
+  // c'est presque toujours une configuration cassée côté serveur (CORS, certificat,
+  // URL fausse). Le hors-ligne se résout tout seul, pas ça — il doit donc alerter.
+  if (looksLikeNetwork) return online ? 'error' : 'offline'
   return 'error'
 }
 

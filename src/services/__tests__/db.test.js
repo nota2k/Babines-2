@@ -47,13 +47,27 @@ describe('classifyReplicationError', () => {
   })
 
   it('reconnaît une absence de réseau', () => {
-    expect(classifyReplicationError({ status: 0 })).toBe('offline')
-    expect(classifyReplicationError({ message: 'Failed to fetch' })).toBe('offline')
-    expect(classifyReplicationError({ name: 'TypeError', message: 'NetworkError' })).toBe('offline')
+    expect(classifyReplicationError({ status: 0 }, false)).toBe('offline')
+    expect(classifyReplicationError({ message: 'Failed to fetch' }, false)).toBe('offline')
+    expect(classifyReplicationError({ name: 'TypeError', message: 'NetworkError' }, false)).toBe('offline')
   })
 
   it('range le reste dans « erreur »', () => {
     expect(classifyReplicationError({ status: 500 })).toBe('error')
+  })
+
+  it('range un échec réseau en hors-ligne quand le navigateur est hors ligne', () => {
+    expect(classifyReplicationError({ message: 'Failed to fetch' }, false)).toBe('offline')
+    expect(classifyReplicationError({ status: 0 }, false)).toBe('offline')
+  })
+
+  it('n’enterre pas un CORS cassé en hors-ligne quand le navigateur est en ligne', () => {
+    expect(classifyReplicationError({ message: 'Failed to fetch' }, true)).toBe('error')
+  })
+
+  it('signale l’authentification quel que soit l’état du réseau', () => {
+    expect(classifyReplicationError({ status: 401 }, false)).toBe('auth-error')
+    expect(classifyReplicationError({ status: 403 }, true)).toBe('auth-error')
   })
 })
 
