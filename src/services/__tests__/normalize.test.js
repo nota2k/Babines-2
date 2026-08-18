@@ -551,22 +551,22 @@ describe('fromYoutubeSearchResults', () => {
     publishedAt: '2009-10-27T12:00:00Z',
   }
 
-  it(`lit la forme brute de l'API YouTube`, () => {
+  it('lit la forme brute de l’API YouTube', () => {
     expect(fromYoutubeSearchResults({ items: [ITEM] })).toEqual([CANDIDAT])
   })
 
-  it(`défait l'enveloppe que produit le nœud n8n`, () => {
+  it('défait l’enveloppe que produit le nœud n8n', () => {
     // Le workflow searchvideos affecte `items` puis répond `allIncomingItems` :
     // le client reçoit `[{ items: [...] }]`, pas `{ items: [...] }`.
     expect(fromYoutubeSearchResults([{ items: [ITEM] }])).toEqual([CANDIDAT])
   })
 
-  it(`accepte un videoId déjà aplati par un « Edit Fields »`, () => {
+  it('accepte un videoId déjà aplati par un « Edit Fields »', () => {
     const aplati = { videoId: 'UBS4Gi1y_nc', snippet: ITEM.snippet }
     expect(fromYoutubeSearchResults({ items: [aplati] })).toEqual([CANDIDAT])
   })
 
-  it(`laisse la miniature vide plutôt que de jeter quand elle manque`, () => {
+  it('laisse la miniature vide plutôt que de jeter quand elle manque', () => {
     const sansImage = { id: { videoId: 'A1' }, snippet: { title: 'Sans image', channelTitle: 'X' } }
     expect(fromYoutubeSearchResults({ items: [sansImage] })).toEqual([
       {
@@ -580,11 +580,11 @@ describe('fromYoutubeSearchResults', () => {
     ])
   })
 
-  it(`écarte un résultat sans identifiant, qu'on ne saurait pas envoyer`, () => {
+  it('écarte un résultat sans identifiant, qu’on ne saurait pas envoyer', () => {
     expect(fromYoutubeSearchResults({ items: [{ snippet: { title: 'Orphelin' } }] })).toEqual([])
   })
 
-  it(`renvoie une liste vide plutôt que de jeter sur une réponse inattendue`, () => {
+  it('renvoie une liste vide plutôt que de jeter sur une réponse inattendue', () => {
     expect(fromYoutubeSearchResults(null)).toEqual([])
     expect(fromYoutubeSearchResults({})).toEqual([])
     expect(fromYoutubeSearchResults([])).toEqual([])
