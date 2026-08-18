@@ -135,6 +135,53 @@ describe('écriture en base', () => {
   })
 })
 
+describe('forme réelle du workflow YouTube — pas la forme brute de l’API Google', () => {
+  it('importe une playlist depuis la forme plate émise par « Edit Fields » (title/itemCount/id/thumbnail)', async () => {
+    // Ce que le nœud « Edit Fields » du workflow YT_Babines/getAllPlaylists émet
+    // réellement (voir docs/n8n/YT_Babines_getAllPlaylists.json), pas la forme
+    // imbriquée snippet/contentDetails de l'API Google. C'est cette confusion qui
+    // avait fait passer un nom de playlist vide et un décompte nul sans que rien
+    // n'échoue.
+    const REAL_PLAYLIST = {
+      title: 'Trouvailles 2026',
+      itemCount: 1,
+      id: 'PL_Y',
+      thumbnail: 'https://i.ytimg.com/vi/x/default.jpg',
+    }
+    const fetchMock = vi.fn(async (url) =>
+      url.endsWith('/youtube') ? jsonResponse([REAL_PLAYLIST]) : jsonResponse(YOUTUBE_ITEMS),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const store = useImportStore()
+    await store.importPlatform('youtube')
+
+    // 1. La playlist est bien lue : Babines connaît son nom et l'utilise pour
+    // appeler le bon endpoint avec le bon identifiant.
+    expect(fetchMock.mock.calls.map((c) => c[0])).toEqual([
+      `${BASE}/youtube`,
+      `${BASE}/youtube/items?playlistId=PL_Y`,
+    ])
+
+    // 2. Le document écrit en base porte le bon _id, le titre découpé et le
+    // titre brut conservé dans la provenance.
+    const doc = await getDb().get('track:youtube:UBS4Gi1y_nc')
+    expect(doc.title).toBe('Windowlicker')
+    expect(doc.artist).toBe('Aphex Twin')
+    expect(doc.sources[0].rawTitle).toBe('Aphex Twin - Windowlicker (Official Video)')
+
+    // 3. C'est l'assertion qui aurait attrapé le bug : la provenance doit porter
+    // le nom de la playlist tiré de `title`, pas une chaîne vide.
+    expect(doc.sources[0].playlistName).toBe('Trouvailles 2026')
+
+    // 4. itemCount (1) correspond exactement au nombre d'éléments renvoyés (1) :
+    // pas de troncature signalée, le job ressort « ok ».
+    const job = store.jobs.at(-1)
+    expect(job.status).toBe('ok')
+    expect(job.truncated).toEqual([])
+  })
+})
+
 describe('erreurs — jamais de liste vide silencieuse', () => {
   it('consigne le code HTTP et la plateforme', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => errorResponse(500)))
