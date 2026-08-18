@@ -52,6 +52,11 @@ function retry(job) {
         <span v-if="job.httpStatus"> — HTTP {{ job.httpStatus }}</span>
         <span class="time">{{ (job.finishedAt || job.startedAt).slice(11, 19) }}</span>
         <p class="message">{{ job.message || 'en cours…' }}</p>
+        <ul v-if="job.truncated && job.truncated.length" class="truncated">
+          <li v-for="t in job.truncated" :key="t.playlistName">
+            {{ t.playlistName }} : {{ t.received }} / {{ t.announced }} morceaux reçus — la source tronque, vérifiez la limite du workflow n8n
+          </li>
+        </ul>
         <button
           v-if="job.status !== 'running' && job.status !== 'ok'"
           type="button"
@@ -107,6 +112,20 @@ button:disabled {
 
 .jobs li.error { border-color: var(--alerte); background: var(--alerte-fond); }
 .jobs li.partial { background: #fffbe6; border-color: var(--jaune); }
+
+.truncated {
+  list-style: none;
+  padding: 0;
+  margin: 0.4em 0 0;
+  font-size: 0.9em;
+  color: var(--encre-douce);
+}
+
+.truncated li {
+  border-left: 3px solid var(--jaune);
+  padding-left: 0.6em;
+  margin-bottom: 0.3em;
+}
 
 .status { font-variant: small-caps; margin-left: 0.6em; }
 .time { float: right; color: var(--encre-tres-douce); font-family: 'DM Mono', monospace; }
