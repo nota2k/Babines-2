@@ -1,0 +1,404 @@
+{
+  "name": "SPOTIFY_Babines/likedTracks",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "library"
+      },
+      "id": "42457485-d885-483b-a963-7d97940b25be",
+      "name": "Spotify2",
+      "type": "n8n-nodes-base.spotify",
+      "typeVersion": 1,
+      "position": [
+        240,
+        180
+      ],
+      "credentials": {
+        "spotifyOAuth2Api": {
+          "id": "fOYFQF02KgLXOIeE",
+          "name": "Spotify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "465cc79b-ca64-4487-8359-e651108b6d2b",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1500,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6ebc374d-71ae-4b56-a044-e40544d296cd",
+              "name": "track.artist",
+              "value": "={{ $json.track.album.artists[0].name }}",
+              "type": "string"
+            },
+            {
+              "id": "310be4a4-0739-4a86-b7c9-93611812f164",
+              "name": "track.title",
+              "value": "={{ $json.track.name }}",
+              "type": "string"
+            },
+            {
+              "id": "fe6a7fc1-7e41-492b-a7f8-561a57fe1be3",
+              "name": "track.added_at",
+              "value": "={{ $json.added_at }}",
+              "type": "string"
+            },
+            {
+              "id": "0306cbea-fff4-4894-b27d-d107a30a51cb",
+              "name": "track.album",
+              "value": "={{ $json.track.album.name }}",
+              "type": "string"
+            },
+            {
+              "id": "99160396-da61-4add-8f4e-3963df871845",
+              "name": "track.track_id",
+              "value": "={{ $json.track.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": "=",
+        "options": {}
+      },
+      "id": "9deff100-6ae3-4258-8e09-7669e3d49a64",
+      "name": "resume",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        180
+      ],
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "opWrite",
+        "queryPath": "=liked",
+        "sourceData": "=track"
+      },
+      "id": "4b208952-2ebb-4845-beee-54b375f3c6ac",
+      "name": "JsonDatabase",
+      "type": "@n-octo-n/n8n-nodes-json-database.JsonDatabase",
+      "typeVersion": 1,
+      "position": [
+        820,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6ebc374d-71ae-4b56-a044-e40544d296cd",
+              "name": "track.artist",
+              "value": "={{ $json.data.artist }}",
+              "type": "string"
+            },
+            {
+              "id": "310be4a4-0739-4a86-b7c9-93611812f164",
+              "name": "track.title",
+              "value": "={{ $json.data.title }}",
+              "type": "string"
+            },
+            {
+              "id": "fe6a7fc1-7e41-492b-a7f8-561a57fe1be3",
+              "name": "track.added_at",
+              "value": "={{ $json.data.added_at }}",
+              "type": "string"
+            },
+            {
+              "id": "0306cbea-fff4-4894-b27d-d107a30a51cb",
+              "name": "track.album",
+              "value": "={{ $json.data.album }}",
+              "type": "string"
+            },
+            {
+              "id": "99160396-da61-4add-8f4e-3963df871845",
+              "name": "track.track_id",
+              "value": "={{ $json.data.track_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": "=",
+        "options": {}
+      },
+      "id": "513203ac-98eb-4894-8e3a-49bbd10d5c6d",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1220,
+        200
+      ],
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "queryPath": "liked"
+      },
+      "id": "9441ab5d-7bb3-442e-8473-a314a3474100",
+      "name": "JsonDatabase1",
+      "type": "@n-octo-n/n8n-nodes-json-database.JsonDatabase",
+      "typeVersion": 1,
+      "position": [
+        -220,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6ebc374d-71ae-4b56-a044-e40544d296cd",
+              "name": "track.artist",
+              "value": "={{ $json.data.artist }}",
+              "type": "string"
+            },
+            {
+              "id": "310be4a4-0739-4a86-b7c9-93611812f164",
+              "name": "track.title",
+              "value": "={{ $json.data.title }}",
+              "type": "string"
+            },
+            {
+              "id": "fe6a7fc1-7e41-492b-a7f8-561a57fe1be3",
+              "name": "track.added_at",
+              "value": "={{ $json.data.added_at }}",
+              "type": "string"
+            },
+            {
+              "id": "0306cbea-fff4-4894-b27d-d107a30a51cb",
+              "name": "track.album",
+              "value": "={{ $json.data.album }}",
+              "type": "string"
+            },
+            {
+              "id": "99160396-da61-4add-8f4e-3963df871845",
+              "name": "track.track_id",
+              "value": "={{ $json.data.track_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": "=",
+        "options": {}
+      },
+      "id": "04442d48-48bb-4a3d-b7f7-ddf5aaf6d441",
+      "name": "Edit Fields1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        400
+      ],
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8974910f-4d7e-4bd6-b6dc-1e867c76832a",
+              "leftValue": "={{ $json.data }}",
+              "rightValue": "em",
+              "operator": {
+                "type": "object",
+                "operation": "empty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "2a89a38d-b4a2-4ae2-84b7-4108695c3e00",
+              "leftValue": "={{ $('Webhook').item.json.query.cache }}",
+              "rightValue": "false",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "f8f2c942-9974-4ef0-8193-5767dc2eaa0b",
+      "name": "If",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -40,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "path": "babines/liked",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "32fce60a-278a-4b06-bce9-a9edb8200475",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -460,
+        380
+      ],
+      "webhookId": "b469b78f-40ba-437a-937d-48ba00985774"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Spotify2": {
+      "main": [
+        [
+          {
+            "node": "resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "resume": {
+      "main": [
+        [
+          {
+            "node": "JsonDatabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JsonDatabase": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JsonDatabase1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Spotify2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "JsonDatabase1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "03f1ed72-da10-4cb1-a6e6-11c20e3b90da",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "481c988b261a051a851b527d4445759b31890c2609461a4eb7afbb13f46709ee"
+  },
+  "id": "kQ1oy6iD1PG2AHQK",
+  "tags": [
+    {
+      "createdAt": "2025-12-18T06:15:08.263Z",
+      "updatedAt": "2025-12-18T06:15:08.263Z",
+      "id": "0JZNlMR2T6nkrqJS",
+      "name": "Babines"
+    }
+  ]
+}
