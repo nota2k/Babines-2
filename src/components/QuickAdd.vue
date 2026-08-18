@@ -1,14 +1,13 @@
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useLibraryStore } from '@/stores/library.js'
 import { parseShareUrl } from '@/services/normalize.js'
 
 const library = useLibraryStore()
-const router = useRouter()
 
 const input = ref('')
 const feedback = ref('')
+const lastEntry = ref(null)
 
 async function submit() {
   const text = input.value.trim()
@@ -16,15 +15,16 @@ async function submit() {
   try {
     const entry = await library.capture(text)
     if (!entry) return
+    lastEntry.value = entry
     feedback.value = parseShareUrl(text)
       ? 'Lien enregistré. Le titre sera complété au retour du réseau.'
       : 'Artiste enregistré.'
     // La saisie n'est effacée qu'après une écriture réussie.
     input.value = ''
-    router.push({ name: 'entry', params: { id: entry._id } })
   } catch (err) {
     // Le store renseigne library.error dans les cas prévus ; le repli garantit
     // qu'un échec inattendu ne se traduise jamais par une zone de message vide.
+    lastEntry.value = null
     feedback.value = library.error || `Impossible d’enregistrer : ${err.message}`
   }
 }
@@ -43,7 +43,12 @@ async function submit() {
     <button type="submit" class="yellow" aria-label="Ajouter">
       <div class="add-icon"></div>
     </button>
-    <p v-if="feedback" class="feedback">{{ feedback }}</p>
+    <p v-if="feedback" class="feedback" role="status">
+      {{ feedback }}
+      <router-link v-if="lastEntry" :to="{ name: 'entry', params: { id: lastEntry._id } }">
+        Annoter
+      </router-link>
+    </p>
   </form>
 </template>
 
@@ -88,5 +93,11 @@ button {
   flex-basis: 100%;
   margin: 0;
   font-size: 0.9em;
+}
+
+.feedback a {
+  margin-left: 0.5em;
+  color: black;
+  text-decoration: underline;
 }
 </style>
