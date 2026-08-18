@@ -7,6 +7,7 @@ import LibraryList from '@/components/LibraryList.vue'
 import PlaylistNav from '@/components/PlaylistNav.vue'
 import QuickAdd from '@/components/QuickAdd.vue'
 import SidePastilles from '@/components/SidePastilles.vue'
+import SortBar from '@/components/SortBar.vue'
 import SyncIndicator from '@/components/SyncIndicator.vue'
 import { useLibraryStore } from '@/stores/library.js'
 import { useImportStore } from '@/stores/import.js'
@@ -45,14 +46,21 @@ onUnmounted(() => {
       <div class="content">
         <FilterBar />
 
-        <p class="count">
-          {{ library.filtered.length }} entrée<span v-if="library.filtered.length > 1">s</span>
-          <span v-if="library.filtered.length !== library.entries.length">
-            sur {{ library.entries.length }}
-          </span>
-        </p>
+        <section class="list-card">
+          <div class="list-header">
+            <h1>{{ library.playlist || 'Tous mes morceaux' }}</h1>
+            <span class="count">
+              {{ library.filtered.length }} entrée<span v-if="library.filtered.length > 1">s</span>
+              <span v-if="library.filtered.length !== library.entries.length">
+                sur {{ library.entries.length }}
+              </span>
+            </span>
+          </div>
 
-        <LibraryList :entries="library.filtered" :total="library.entries.length" :loading="library.isLoading" />
+          <SortBar />
+
+          <LibraryList :entries="library.filtered" :total="library.entries.length" :loading="library.isLoading" />
+        </section>
       </div>
 
       <SidePastilles />
@@ -79,9 +87,38 @@ main.library {
   flex: 999 1 min(100%, 380px);
 }
 
+.list-card {
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.list-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px 24px;
+  padding: 24px 20px 18px;
+  border-bottom: 1px solid var(--trait);
+}
+
+.list-header h1 {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(20px, 2.6vw, 30px);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
 .count {
   font-family: 'DM Mono', monospace;
   font-size: 0.85em;
   color: var(--encre-douce);
+  white-space: nowrap;
 }
 </style>
