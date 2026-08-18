@@ -1,0 +1,11 @@
+# Les fichiers du serveur Node vivent dans la racine web : cPanel impose que la
+# racine applicative et la racine web coïncident, et il n'y a pas moyen de les
+# séparer. Sans ce blocage, app.js, setup.js et surtout README.md — qui décrit
+# le mécanisme de sécurité — sont lisibles par quiconque connaît l'adresse, et
+# package-lock.json livre les versions exactes d'un arbre de dépendances daté.
+#
+# Aucun identifiant n'est en jeu : ils vivent dans BABINES_DATA_DIR, hors de la
+# racine web. C'est du renseignement offert, pas une fuite de secret.
+<FilesMatch "^(app|setup)\.js$|^package(-lock)?\.json$|^README\.md$|^log\.txt$">
+  Require all denied
+</FilesMatch>

@@ -19,6 +19,26 @@ entier n'a rien à faire là), ni moins :
 - `app.js` — le serveur
 - `setup.js` — le script de sécurisation du premier démarrage, voir plus bas
 - `package.json` et `package-lock.json` — pour **Run NPM Install**
+- `.htaccess` — **indispensable**, voir juste en dessous
+
+### Pourquoi `.htaccess` n'est pas optionnel
+
+La racine web **est** la racine applicative : cPanel l'impose, et on ne peut pas
+les séparer. Sans ce fichier, `app.js`, `setup.js`, `package-lock.json` et
+surtout ce `README.md` — qui décrit le mécanisme de sécurité — sont servis à
+quiconque connaît l'adresse. Vérifié en production avant sa mise en place :
+tous répondaient `200`.
+
+Aucun identifiant n'est en jeu, ils vivent dans `BABINES_DATA_DIR` hors de la
+racine web. Mais `package-lock.json` livre les versions exactes d'un arbre de
+dépendances ancien, ce qui suffit à cibler des failles connues.
+
+Après déploiement, vérifier — `403` attendu sur les deux premiers, `200` sur le
+troisième :
+
+    curl -o /dev/null -w '%{http_code}\n' https://<domaine>/app.js
+    curl -o /dev/null -w '%{http_code}\n' https://<domaine>/README.md
+    curl -o /dev/null -w '%{http_code}\n' https://<domaine>/
 
 `server/data/` n'en fait pas partie : il est créé par `app.js` lui-même
 (`BABINES_DATA_DIR`), et ne doit surtout pas être déposé à la main.
