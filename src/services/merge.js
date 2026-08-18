@@ -18,7 +18,14 @@ export function mergeSources(existing = [], incoming = []) {
   return merged
 }
 
-const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
+const SOURCE_FIELDS = ['platform', 'playlistId', 'playlistName', 'externalId', 'addedAt', 'url', 'rawTitle']
+
+const sameSource = (a, b) => SOURCE_FIELDS.every((field) => (a[field] ?? null) === (b[field] ?? null))
+
+// Comparaison structurelle plutôt que textuelle : deux sources logiquement identiques
+// sérialisées dans un ordre de clés différent ne doivent pas passer pour un changement,
+// sans quoi un réimport fabriquerait une révision CouchDB pour rien.
+const sameSources = (a, b) => a.length === b.length && a.every((source, i) => sameSource(source, b[i]))
 
 /**
  * Règle non négociable : un réimport met à jour les métadonnées de la plateforme
@@ -26,6 +33,8 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
  * Si rien ne change, l'objet existant est renvoyé tel quel — pas de révision inutile.
  */
 export function mergeTrackDoc(existing, incoming, now = new Date().toISOString()) {
+  // Document neuf : il conserve les dates que toTrackDoc lui a déjà posées à la
+  // construction ; `now` ne concerne que la mise à jour d'un document existant.
   if (!existing) return incoming
 
   const sources = mergeSources(existing.sources, incoming.sources)
@@ -49,7 +58,7 @@ export function mergeTrackDoc(existing, incoming, now = new Date().toISOString()
     next.album === existing.album &&
     next.matchKey === existing.matchKey &&
     next.pending === existing.pending &&
-    same(next.sources, existing.sources)
+    sameSources(next.sources, existing.sources)
 
   return unchanged ? existing : next
 }

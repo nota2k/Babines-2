@@ -101,6 +101,20 @@ describe('mergeTrackDoc', () => {
     expect(mergeTrackDoc(existing, doc(), LATER)).toBe(existing)
   })
 
+  it('ne fabrique pas de révision quand une source identique arrive avec un autre ordre de clés', () => {
+    const existing = doc({ _rev: '1-abc' })
+    const reordered = {
+      rawTitle: null,
+      url: 'https://open.spotify.com/track/X1',
+      addedAt: '2025-04-07T14:34:51Z',
+      externalId: 'X1',
+      playlistName: 'BAT BEAT',
+      playlistId: 'PL_A',
+      platform: 'spotify',
+    }
+    expect(mergeTrackDoc(existing, doc({ sources: [reordered] }), LATER)).toBe(existing)
+  })
+
   it('rejouer deux fois le même import donne le même état', () => {
     const once = mergeTrackDoc(doc({ _rev: '1-abc' }), doc({ sources: [source({ playlistId: 'PL_B' })] }), LATER)
     const twice = mergeTrackDoc(once, doc({ sources: [source({ playlistId: 'PL_B' })] }), LATER)
