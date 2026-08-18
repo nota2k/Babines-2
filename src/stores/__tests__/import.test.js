@@ -768,3 +768,54 @@ describe('resolveOne — résolution à l’enregistrement', () => {
     await expect(useImportStore().resolveOne('track:youtube:FANTOME')).resolves.toBe(false)
   })
 })
+
+describe('addVideoToPlaylist', () => {
+  it('poste sur le bon webhook avec la vidéo et la playlist', async () => {
+    global.fetch = vi.fn().mockResolvedValue(jsonResponse([{ id: 'PLI_1' }]))
+    const imports = useImportStore()
+
+    await imports.addVideoToPlaylist({ videoId: 'V1', playlistId: 'PL_Y' })
+
+    expect(global.fetch).toHaveBeenCalledWith(`${BASE}/addvideotoyoutube?id=V1&playlistId=PL_Y`, {
+      method: 'POST',
+    })
+  })
+
+  it('lève une ImportError portant le statut quand YouTube refuse', async () => {
+    global.fetch = vi.fn().mockResolvedValue(errorResponse(403))
+    const imports = useImportStore()
+
+    await expect(
+      imports.addVideoToPlaylist({ videoId: 'V1', playlistId: 'PL_Y' }),
+    ).rejects.toMatchObject({ name: 'ImportError', status: 403 })
+  })
+
+  it('refuse d’appeler le réseau quand n8n n’est pas configuré', async () => {
+    vi.stubEnv('VITE_N8N_BASE_URL', '')
+    global.fetch = vi.fn()
+    const imports = useImportStore()
+
+    await expect(imports.addVideoToPlaylist({ videoId: 'V1', playlistId: 'PL_Y' })).rejects.toThrow(
+      /VITE_N8N_BASE_URL/,
+    )
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+
+  it('ne touche pas au document de l’entrée : la playlist YouTube est la seule destination', async () => {
+    // Garde-fou de la contrainte du flux. Si ce test tombe, c'est qu'une écriture
+    // s'est glissée dans le chemin sortant — la décision était de n'en faire aucune.
+    const db = getDb()
+    const { rev } = await db.put(pendingDoc('V1'))
+    const avant = await db.get('track:youtube:V1')
+
+    global.fetch = vi.fn().mockResolvedValue(jsonResponse([{ id: 'PLI_1' }]))
+    const imports = useImportStore()
+
+    await imports.searchVideos('Aphex Twin Windowlicker')
+    await imports.addVideoToPlaylist({ videoId: 'V1', playlistId: 'PL_Y' })
+
+    const apres = await db.get('track:youtube:V1')
+    expect(apres).toEqual(avant)
+    expect(apres._rev).toBe(rev)
+  })
+})

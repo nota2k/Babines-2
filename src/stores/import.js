@@ -201,6 +201,19 @@ export const useImportStore = defineStore('import', {
       return { found: ids.includes(videoId), checked: ids.length }
     },
 
+    /**
+     * Ajoute une vidéo à une playlist YouTube. Rien n'est écrit en base : ce flux
+     * part d'une entrée et n'y revient pas.
+     *
+     * Tout passe par la chaîne de requête, sans corps : le workflow
+     * addvideotoyoutube lit $json.query.id et $json.query.playlistId, et compose
+     * lui-même le corps attendu par l'API YouTube.
+     */
+    async addVideoToPlaylist({ videoId, playlistId }) {
+      if (!base()) throw new ImportError(NOT_CONFIGURED, { status: 0, url: '' })
+      await fetchJson(ENDPOINTS.youtube.addToPlaylist(videoId, playlistId), { method: 'POST' })
+    },
+
     async importPlaylist(platform, opts = {}) {
       return importPlaylistTracks(platform, opts)
     },
