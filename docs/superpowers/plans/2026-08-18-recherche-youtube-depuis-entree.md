@@ -341,7 +341,9 @@ import { ADAPTERS, toTrackDoc, fromYoutubeSearchResults } from '@/services/norma
 async function fetchJson(url, { method = 'GET' } = {}) {
   let response
   try {
-    response = await fetch(url, method === 'GET' ? undefined : { method })
+    // On branche sur l'appel, pas sur l'argument : `fetch(url, undefined)` passe
+    // deux arguments, ce qu'une assertion `toHaveBeenCalledWith(url)` rejette.
+    response = method === 'GET' ? await fetch(url) : await fetch(url, { method })
   } catch (err) {
     throw new ImportError(`Réseau indisponible (${err.message})`, { status: 0, url })
   }
@@ -352,7 +354,7 @@ async function fetchJson(url, { method = 'GET' } = {}) {
 }
 ```
 
-Le `undefined` sur le chemin GET n'est pas cosmétique : il garde `fetch(url)` exactement tel que les tests existants l'attendent dans leurs assertions `toHaveBeenCalledWith`.
+Le branchement sur l'appel n'est pas cosmétique. Vérifié en vitest 4 : `fetch(url, undefined)` passe deux arguments et fait échouer `toHaveBeenCalledWith(url)`, l'assertion qu'utilisent les tests de cette tâche et de la tâche 3. Écrire `fetch(url, method === 'GET' ? undefined : { method })` casserait donc les tests de ce plan.
 
 **3d.** Ajouter l'action dans le bloc `actions`, après `fetchPlaylists` :
 
