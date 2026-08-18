@@ -1,15 +1,9 @@
 @import './base.css';
 
-a,
-.green {
+a {
   text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.2s ease-in-out all;
-  margin-left: 0;
-  padding: 3px;
 }
 
 body {
-  font-family: 'Roboto', sans-serif;
-  margin: 10px 20px;
+  margin: 0;
 }

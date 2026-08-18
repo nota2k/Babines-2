@@ -1,23 +1,48 @@
+:root {
+  /* Couleurs — jetons de la refonte visuelle v2 (voir
+     docs/superpowers/specs/2026-08-18-babines-v2-design-visuel.md).
+     N'utiliser que ces noms dans les nouveaux styles. */
+  --fond: #f4f2ed;
+  --surface: #ffffff;
+  --surface-douce: #faf9f6;
+  --trait: #e6e2d8;
+  --trait-fin: #f4f1ea;
+  --encre: #111111;
+  --encre-douce: #6b6b6b;
+  --encre-tres-douce: #8a8a8a;
+  --jaune: #ffe13f;
+  --alerte: #b00020;
+  --alerte-fond: #ffe9ec;
+
+  /* Alias : du code existant référence encore --yellow directement. */
+  --yellow: var(--jaune);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html {
-  /* background: linear-gradient(148deg, rgba(159, 255, 151, 1) 0%, rgba(143, 193, 199, 1) 100%); */
   height: max-content;
 }
 
-@font-face {
-  font-family: 'Eras';
-  src: url(fonts/ERASBD.TTF);
+body {
+  background: var(--fond);
+  color: var(--encre);
+  font-family: 'DM Sans', sans-serif;
+}
+
+::selection {
+  background: var(--jaune);
+  color: var(--encre);
+}
+
+a {
+  color: var(--encre);
 }
 
 main {
-  max-width: 1000px;
-  margin: 0 auto;
   padding-bottom: 4em;
-}
-
-/* .container {
-  border: 2px solid black;
-} */
-
-:root {
-  --yellow: #ffe13f;
 }
