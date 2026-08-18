@@ -23,7 +23,7 @@ const library = useLibraryStore()
     </label>
 
     <p class="count">
-      {{ library.entries.length }} entrée<span v-if="library.entries.length > 1">s</span>
+      {{ library.filtered.length }} entrée<span v-if="library.filtered.length > 1">s</span>
     </p>
   </header>
 </template>
