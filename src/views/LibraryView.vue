@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, onUnmounted } from 'vue'
 import Header from '@/components/Header.vue'
 import FilterBar from '@/components/FilterBar.vue'
 import LibraryList from '@/components/LibraryList.vue'
@@ -10,10 +10,19 @@ import { useImportStore } from '@/stores/import.js'
 const library = useLibraryStore()
 const imports = useImportStore()
 
+const resolveOnReconnect = () => imports.resolvePending().catch(() => {})
+
 onMounted(() => {
   if (!library.entries.length && !library.isLoading) library.load()
-  if (navigator.onLine) imports.resolvePending()
-  window.addEventListener('online', () => imports.resolvePending())
+  // `<router-view :key>` démonte et remonte cette vue à chaque changement de
+  // route, et une capture y mène systématiquement : sans retrait, les écouteurs
+  // s'accumuleraient à chaque aller-retour.
+  if (navigator.onLine) imports.resolvePending().catch(() => {})
+  window.addEventListener('online', resolveOnReconnect)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('online', resolveOnReconnect)
 })
 </script>
 

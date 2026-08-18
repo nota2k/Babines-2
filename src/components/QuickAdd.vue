@@ -22,8 +22,10 @@ async function submit() {
     // La saisie n'est effacée qu'après une écriture réussie.
     input.value = ''
     router.push({ name: 'entry', params: { id: entry._id } })
-  } catch {
-    feedback.value = library.error
+  } catch (err) {
+    // Le store renseigne library.error dans les cas prévus ; le repli garantit
+    // qu'un échec inattendu ne se traduise jamais par une zone de message vide.
+    feedback.value = library.error || `Impossible d’enregistrer : ${err.message}`
   }
 }
 </script>
