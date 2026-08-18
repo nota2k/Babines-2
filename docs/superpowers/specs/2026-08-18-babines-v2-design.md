@@ -281,6 +281,17 @@ Un champ unique, toujours accessible en haut de la bibliothèque.
 | URL Spotify / Deezer / YouTube | Plateforme et identifiant extraits **par simple lecture de l'URL, sans réseau**. Création immédiate de `track:<platform>:<id>` marqué `pending`, avec l'URL et l'horodatage. L'entrée est utilisable et annotable aussitôt. |
 | Texte libre | Création d'une entrée `artist`. |
 
+Après une capture, **on reste dans la bibliothèque** : le champ se vide et reste prêt, la nouvelle
+entrée apparaît en tête de liste (le tri par défaut est « modifié récemment »), et le message de
+confirmation porte un lien « Annoter » vers l'écran de détail.
+
+*Décision du 2026-08-18, amendement.* La version initiale de cette spec faisait naviguer vers le
+détail après chaque capture. Trois raisons de ne plus le faire : le scénario central — noter trois
+noms d'affilée à la sortie d'un concert — devenait pénible ; le message de confirmation
+s'affichait juste avant le changement d'écran, donc n'était jamais lu ; et l'annotation reste à un
+geste de toute façon. Le seul usage désavantagé est celui où l'on annote systématiquement chaque
+ajout, qui paie alors un clic.
+
 L'enrichissement est différé : `GET /resolve` est appelé au retour du réseau et transforme les
 entrées `pending` en morceaux complets.
 
