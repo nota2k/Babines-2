@@ -278,3 +278,36 @@ describe('resolvePending — le silence global disparaît', () => {
     expect(store.jobs).toHaveLength(0)
   })
 })
+
+describe('n8n non configuré', () => {
+  it('échoue explicitement sans émettre la moindre requête', async () => {
+    vi.stubEnv('VITE_N8N_BASE_URL', '')
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const store = useImportStore()
+    await store.importPlatform('spotify')
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    const job = store.jobs.at(-1)
+    expect(job.status).toBe('error')
+    expect(job.message).toMatch(/configur/i)
+  })
+
+  it('ne tente aucune résolution et le consigne', async () => {
+    vi.stubEnv('VITE_N8N_BASE_URL', '')
+    const db = getDb()
+    await db.put(pendingDoc('ZZZ'))
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const store = useImportStore()
+    const resolved = await store.resolvePending()
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(resolved).toBe(0)
+    expect(store.jobs.at(-1).message).toMatch(/configur/i)
+    // L'entrée reste intacte et en attente : rien n'est perdu.
+    expect((await db.get('track:youtube:ZZZ')).pending).toBe(true)
+  })
+})

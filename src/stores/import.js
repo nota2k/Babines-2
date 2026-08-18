@@ -15,6 +15,9 @@ export class ImportError extends Error {
 
 const base = () => String(import.meta.env.VITE_N8N_BASE_URL || '').replace(/\/+$/, '')
 
+/** Message unique, pour que l'écran des sources dise quoi faire plutôt que « erreur ». */
+const NOT_CONFIGURED = "n8n n'est pas configuré : renseignez VITE_N8N_BASE_URL dans le fichier .env"
+
 // Les workflows n8n n'ont pas été unifiés : c'est le seul endroit du client qui
 // connaît leurs chemins. Voir docs/n8n/ pour les exports correspondants.
 export const ENDPOINTS = {
@@ -137,6 +140,12 @@ export const useImportStore = defineStore('import', {
     /** Importe toutes les playlists d'une plateforme, plus les favoris si la plateforme en expose. */
     async importPlatform(platform) {
       const job = this.startJob(platform, `Import ${platform}`)
+
+      if (!base()) {
+        this.finishJob(job, { status: 'error', message: NOT_CONFIGURED, httpStatus: null })
+        return job
+      }
+
       const failures = []
       let imported = 0
       let writeFailures = 0
@@ -195,6 +204,12 @@ export const useImportStore = defineStore('import', {
       const library = useLibraryStore()
       const all = await db.allDocs({ include_docs: true })
       const pending = all.rows.map((r) => r.doc).filter((d) => d && d.pending)
+
+      if (pending.length && !base()) {
+        const job = this.startJob('resolve', 'Résolution des entrées en attente')
+        this.finishJob(job, { status: 'error', message: NOT_CONFIGURED, httpStatus: null })
+        return 0
+      }
 
       let resolved = 0
       let failures = 0
