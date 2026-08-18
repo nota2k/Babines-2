@@ -224,6 +224,18 @@ describe('parseShareUrl', () => {
     expect(parseShareUrl('Pulsallama')).toBeNull()
     expect(parseShareUrl('')).toBeNull()
   })
+
+  it('rejette un identifiant Spotify tronqué', () => {
+    expect(parseShareUrl('https://open.spotify.com/track/2VNfJpwd')).toBeNull()
+  })
+
+  it('rejette un identifiant Spotify rallongé', () => {
+    expect(parseShareUrl('https://open.spotify.com/track/2VNfJpwdEQBLyXajaa6LWTextra')).toBeNull()
+  })
+
+  it('rejette un lien de piste sans identifiant', () => {
+    expect(parseShareUrl('https://open.spotify.com/track/')).toBeNull()
+  })
 })
 
 describe('toPendingTrackDoc', () => {

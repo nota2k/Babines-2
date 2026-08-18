@@ -73,8 +73,8 @@ export function splitYoutubeTitle(rawTitle = '') {
 }
 
 const URL_PATTERNS = [
-  { platform: 'spotify', re: /open\.spotify\.com\/(?:intl-[a-z]{2}\/)?track\/([A-Za-z0-9]+)/ },
-  { platform: 'spotify', re: /^spotify:track:([A-Za-z0-9]+)$/ },
+  { platform: 'spotify', re: /open\.spotify\.com\/(?:intl-[a-z]{2}\/)?track\/([A-Za-z0-9]{22})(?![A-Za-z0-9])/ },
+  { platform: 'spotify', re: /^spotify:track:([A-Za-z0-9]{22})$/ },
   { platform: 'deezer', re: /deezer\.com\/(?:[a-z]{2}\/)?track\/(\d+)/ },
   { platform: 'youtube', re: /youtube\.com\/watch\?(?:[^\s]*&)?v=([A-Za-z0-9_-]{11})/ },
   { platform: 'youtube', re: /youtu\.be\/([A-Za-z0-9_-]{11})/ },
