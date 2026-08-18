@@ -435,3 +435,64 @@ describe('n8n non configuré', () => {
     expect((await db.get('track:youtube:ZZZ')).pending).toBe(true)
   })
 })
+
+describe('resolveOne — résolution à l’enregistrement', () => {
+  it('complète l’entrée qu’on vient de capturer, sans toucher aux autres', async () => {
+    const db = getDb()
+    await db.put(pendingDoc('UBS4Gi1y_nc'))
+    await db.put(pendingDoc('AUTRE'))
+
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({ videoId: 'UBS4Gi1y_nc', title: 'Aphex Twin - Windowlicker (Official Video)' }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const ok = await useImportStore().resolveOne('track:youtube:UBS4Gi1y_nc')
+
+    expect(ok).toBe(true)
+    // Un seul appel : capturer un lien ne doit pas relancer la résolution de
+    // toute la bibliothèque en attente.
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock.mock.calls[0][0]).toBe(`${BASE}/resolve/youtube?id=UBS4Gi1y_nc`)
+
+    const doc = await db.get('track:youtube:UBS4Gi1y_nc')
+    expect(doc.pending).toBe(false)
+    expect(doc.artist).toBe('Aphex Twin')
+    expect(doc.title).toBe('Windowlicker')
+
+    // L'autre entrée en attente n'a pas bougé.
+    expect((await db.get('track:youtube:AUTRE')).pending).toBe(true)
+  })
+
+  it('renvoie false et laisse l’entrée en attente quand la résolution échoue', async () => {
+    const db = getDb()
+    await db.put(pendingDoc('ZZZ', 'à réécouter'))
+    vi.stubGlobal('fetch', vi.fn(async () => errorResponse(500)))
+
+    const ok = await useImportStore().resolveOne('track:youtube:ZZZ')
+
+    expect(ok).toBe(false)
+    const doc = await db.get('track:youtube:ZZZ')
+    expect(doc.pending).toBe(true)
+    expect(doc.note).toBe('à réécouter')
+  })
+
+  it('ne tente rien pour une entrée sans provenance, comme un artiste noté à la main', async () => {
+    const db = getDb()
+    await db.put({
+      _id: 'artist:1', type: 'artist', name: 'Aphex Twin', matchKey: 'aphex twin',
+      pending: false, sources: [], note: '', tags: [],
+      createdAt: '2026-08-18T14:00:00Z', updatedAt: '2026-08-18T14:00:00Z',
+    })
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    expect(await useImportStore().resolveOne('artist:1')).toBe(false)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('ne jette pas quand le document a disparu entre la capture et la résolution', async () => {
+    vi.stubGlobal('fetch', vi.fn())
+    await expect(useImportStore().resolveOne('track:youtube:FANTOME')).resolves.toBe(false)
+  })
+})

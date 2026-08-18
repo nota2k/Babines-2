@@ -102,6 +102,29 @@ async function importPlaylistTracks(platform, { playlistId = null, playlistName 
   return writeTracks(tracks, { platform, playlistId, playlistName })
 }
 
+/**
+ * Complète un document « en attente » à partir de sa première provenance.
+ * Renvoie le document écrit, ou null quand il n'y avait rien à faire.
+ * Lève si l'appel réseau échoue : c'est à l'appelant de décider quoi en dire,
+ * l'entrée restant alors en attente et intacte.
+ * Les deux chemins de résolution — à l'enregistrement et au retour du réseau —
+ * passent par ici pour qu'ils ne puissent pas diverger.
+ */
+async function resolveDoc(db, doc, now) {
+  const source = doc.sources?.[0]
+  if (!source || !ENDPOINTS[source.platform]) return null
+  const raw = await fetchJson(ENDPOINTS[source.platform].resolve(source.externalId))
+  const fresh = toTrackDoc(
+    ADAPTERS[source.platform].track(raw),
+    { platform: source.platform, playlistId: source.playlistId, playlistName: source.playlistName },
+    now,
+  )
+  const merged = mergeTrackDoc(doc, fresh, now)
+  if (merged === doc) return null
+  await db.put(merged)
+  return merged
+}
+
 export const useImportStore = defineStore('import', {
   state: () => ({
     jobs: [],
@@ -244,20 +267,8 @@ export const useImportStore = defineStore('import', {
       const now = new Date().toISOString()
 
       for (const doc of pending) {
-        const source = doc.sources?.[0]
-        if (!source || !ENDPOINTS[source.platform]) continue
         try {
-          const raw = await fetchJson(ENDPOINTS[source.platform].resolve(source.externalId))
-          const fresh = toTrackDoc(
-            ADAPTERS[source.platform].track(raw),
-            { platform: source.platform, playlistId: source.playlistId, playlistName: source.playlistName },
-            now,
-          )
-          const merged = mergeTrackDoc(doc, fresh, now)
-          if (merged !== doc) {
-            await db.put(merged)
-            resolved += 1
-          }
+          if (await resolveDoc(db, doc, now)) resolved += 1
         } catch (err) {
           // L'entrée reste « en attente » : elle sera retentée au prochain retour du réseau.
           // Rien de ce que l'utilisateur a écrit n'est touché. Le silence est voulu ici,
@@ -282,6 +293,36 @@ export const useImportStore = defineStore('import', {
       }
 
       return resolved
+    },
+
+    /**
+     * Complète une seule entrée, juste après sa capture. Renvoie true si le
+     * titre a bien été récupéré. Ne consigne pas de job : l'échec est rendu à
+     * l'écran de capture, et l'entrée restée en attente sera retentée au
+     * prochain retour du réseau par resolvePending.
+     */
+    async resolveOne(id) {
+      if (!base()) return false
+      const db = getDb()
+      const library = useLibraryStore()
+
+      let doc
+      try {
+        doc = await db.get(id)
+      } catch {
+        // Capture puis suppression immédiate : il n'y a plus rien à compléter.
+        return false
+      }
+      if (!doc.pending) return false
+
+      try {
+        const merged = await resolveDoc(db, doc, new Date().toISOString())
+        if (!merged) return false
+        library.replaceLocal(merged)
+        return true
+      } catch {
+        return false
+      }
     },
   },
 })

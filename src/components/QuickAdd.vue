@@ -1,13 +1,38 @@
 <script setup>
 import { ref } from 'vue'
 import { useLibraryStore } from '@/stores/library.js'
+import { useImportStore } from '@/stores/import.js'
 import { parseShareUrl } from '@/services/normalize.js'
 
 const library = useLibraryStore()
+const imports = useImportStore()
 
 const input = ref('')
 const feedback = ref('')
 const lastEntry = ref(null)
+
+/** « Aphex Twin — Windowlicker », ou le seul titre quand l'artiste manque. */
+function libelle(entry) {
+  return [entry.artist, entry.title].filter(Boolean).join(' — ')
+}
+
+/**
+ * Va chercher le titre de la vidéo dont on vient d'enregistrer le lien.
+ * L'entrée est déjà écrite à ce stade : cet appel ne peut donc rien faire
+ * perdre, et son échec se lit à l'écran sans bloquer la saisie suivante.
+ */
+async function completer(entry) {
+  feedback.value = 'Lien enregistré. Récupération du titre…'
+  const ok = await imports.resolveOne(entry._id)
+  if (!ok) {
+    feedback.value = 'Lien enregistré. Le titre sera complété au retour du réseau.'
+    return
+  }
+  const complete = library.entries.find((e) => e._id === entry._id)
+  if (complete) lastEntry.value = complete
+  const nom = complete ? libelle(complete) : ''
+  feedback.value = nom ? `Enregistré : ${nom}` : 'Lien enregistré et complété.'
+}
 
 async function submit() {
   const text = input.value.trim()
@@ -21,6 +46,8 @@ async function submit() {
       : 'Artiste enregistré.'
     // La saisie n'est effacée qu'après une écriture réussie.
     input.value = ''
+    // Une entrée déjà connue revient complète : rien à récupérer.
+    if (entry.pending) await completer(entry)
   } catch (err) {
     // Le store renseigne library.error dans les cas prévus ; le repli garantit
     // qu'un échec inattendu ne se traduise jamais par une zone de message vide.
