@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import AppHeader from '@/components/AppHeader.vue'
 import ErrorBanner from '@/components/ErrorBanner.vue'
 import FilterBar from '@/components/FilterBar.vue'
@@ -9,11 +9,36 @@ import QuickAdd from '@/components/QuickAdd.vue'
 import SidePastilles from '@/components/SidePastilles.vue'
 import SortBar from '@/components/SortBar.vue'
 import SyncIndicator from '@/components/SyncIndicator.vue'
+import LoginPanel from '@/components/LoginPanel.vue'
+import { currentSession, restoreSession } from '@/services/session.js'
 import { useLibraryStore } from '@/stores/library.js'
 import { useImportStore } from '@/stores/import.js'
 
 const library = useLibraryStore()
 const imports = useImportStore()
+
+const session = ref(currentSession())
+
+function connecte(ouverte) {
+  session.value = ouverte
+  library.startReplication?.()
+}
+
+// La session elle-même (fermeture sur 401, réouverture au retour du réseau)
+// est gérée dans main.js, qui vit pour toute la durée de l'app — cette vue,
+// elle, se démonte à chaque changement de route. Ici on ne fait que relire
+// l'état courant pour rafraîchir l'affichage : jamais le modifier.
+watch(
+  () => library.syncStatus,
+  () => {
+    session.value = currentSession()
+  },
+)
+
+// import.meta n'est pas accessible depuis le template : sans URL de
+// synchronisation, l'application est en local pur et proposer une connexion
+// n'aurait aucun sens.
+const VITE_COUCHDB_URL = import.meta.env.VITE_COUCHDB_URL
 
 const resolveOnReconnect = () => imports.resolvePending().catch(() => {})
 
@@ -24,6 +49,14 @@ onMounted(() => {
   // s'accumuleraient à chaque aller-retour.
   if (navigator.onLine) imports.resolvePending().catch(() => {})
   window.addEventListener('online', resolveOnReconnect)
+
+  // Le cookie de session survit au rechargement, pas cette vue : sans cette
+  // vérification, l'écran de connexion réapparaîtrait devant un utilisateur
+  // déjà authentifié. La réplication elle-même est déjà relancée par
+  // main.js ; ici on ne fait que rafraîchir l'affichage.
+  restoreSession().then((restaure) => {
+    if (restaure) session.value = restaure
+  })
 })
 
 onUnmounted(() => {
@@ -37,6 +70,7 @@ onUnmounted(() => {
     <ErrorBanner />
 
     <SyncIndicator />
+    <LoginPanel v-if="!session && VITE_COUCHDB_URL" @connecte="connecte" />
 
     <QuickAdd />
 
@@ -59,7 +93,11 @@ onUnmounted(() => {
 
           <SortBar />
 
-          <LibraryList :entries="library.filtered" :total="library.entries.length" :loading="library.isLoading" />
+          <LibraryList
+            :entries="library.filtered"
+            :total="library.entries.length"
+            :loading="library.isLoading"
+          />
         </section>
       </div>
 
@@ -110,7 +148,8 @@ main.library {
      qu'aucune n'est annotée, alors que les titres, longs, se tronquaient
      souvent en 3fr/2fr/2fr. La note garde 2fr pour rester lisible une fois
      annotée. */
-  --grille-ligne: 26px 16px 74px minmax(0, 5fr) minmax(0, 3fr) minmax(0, 2fr) minmax(0, 90px) minmax(0, 96px);
+  --grille-ligne: 26px 16px 74px minmax(0, 5fr) minmax(0, 3fr) minmax(0, 2fr) minmax(0, 90px)
+    minmax(0, 96px);
 
   background: var(--surface);
   border: 1px solid var(--trait);

@@ -828,3 +828,120 @@ describe('addVideoToPlaylist', () => {
     expect(apres._rev).toBe(rev)
   })
 })
+
+describe('« déjà à jour » — un réimport sans nouveauté n’est pas un import à zéro', () => {
+  it('compte les morceaux inchangés au lieu de les passer sous silence', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(SPOTIFY_TRACKS)),
+    )
+    const store = useImportStore()
+    const opts = { playlistId: 'PL_A', playlistName: 'BAT BEAT' }
+
+    const premier = await store.importPlaylist('spotify', opts)
+    expect(premier).toMatchObject({ written: 2, skipped: 0 })
+
+    const second = await store.importPlaylist('spotify', opts)
+    expect(second).toMatchObject({ written: 0, skipped: 2 })
+  })
+
+  it('ne compte qu’une fois un morceau que la volée contient deux fois', async () => {
+    const doubled = [SPOTIFY_TRACKS[0], SPOTIFY_TRACKS[0]]
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(doubled)),
+    )
+    const store = useImportStore()
+    const opts = { playlistId: 'PL_A', playlistName: 'BAT BEAT' }
+
+    await store.importPlaylist('spotify', opts)
+    const second = await store.importPlaylist('spotify', opts)
+
+    expect(second.skipped).toBe(1)
+  })
+
+  it('le dit dans le job, et ne dégrade pas son statut pour autant', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url) =>
+        url.includes('/getplaylist')
+          ? jsonResponse(SPOTIFY_PLAYLISTS)
+          : jsonResponse(SPOTIFY_TRACKS),
+      ),
+    )
+    const store = useImportStore()
+    await store.importPlatform('spotify')
+    await store.importPlatform('spotify')
+
+    const job = store.jobs.at(-1)
+    expect(job.imported).toBe(0)
+    expect(job.skipped).toBe(4)
+    expect(job.status).toBe('ok')
+    expect(job.message).toMatch(/déjà à jour/)
+  })
+})
+
+describe('nouveau ou mis à jour — « importé » recouvrait deux choses différentes', () => {
+  it('distingue la création d’un document de l’ajout d’une provenance à un document existant', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(SPOTIFY_TRACKS)),
+    )
+    const store = useImportStore()
+
+    const premier = await store.importPlaylist('spotify', {
+      playlistId: 'PL_A',
+      playlistName: 'BAT BEAT',
+    })
+    expect(premier).toMatchObject({ written: 2, created: 2, updated: 0, skipped: 0 })
+
+    // Mêmes morceaux, autre playlist : rien de neuf en base, deux provenances de plus.
+    const second = await store.importPlaylist('spotify', {
+      playlistId: 'PL_B',
+      playlistName: 'VOYAGER',
+    })
+    expect(second).toMatchObject({ written: 2, created: 0, updated: 2, skipped: 0 })
+  })
+
+  it('ne compte comme créé que ce que PouchDB a réellement accepté', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse(SPOTIFY_TRACKS)),
+    )
+    const db = getDb()
+    const realBulkDocs = db.bulkDocs.bind(db)
+    db.bulkDocs = async (docs) => {
+      const results = await realBulkDocs(docs)
+      return results.map((r, i) =>
+        i === 0 ? { id: docs[0]._id, error: true, name: 'conflict', message: 'simulé' } : r,
+      )
+    }
+
+    const { created, written } = await useImportStore().importPlaylist('spotify', {
+      playlistId: 'PL_A',
+      playlistName: 'BAT BEAT',
+    })
+    expect(written).toBe(1)
+    expect(created).toBe(1)
+  })
+
+  it('sépare les trois comptes dans le message du job', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url) =>
+        url.includes('/getplaylist')
+          ? jsonResponse(SPOTIFY_PLAYLISTS)
+          : jsonResponse(SPOTIFY_TRACKS),
+      ),
+    )
+    const store = useImportStore()
+
+    // La playlist crée les deux morceaux ; les favoris leur ajoutent une provenance.
+    await store.importPlatform('spotify')
+    const job = store.jobs.at(-1)
+    expect(job.created).toBe(2)
+    expect(job.updated).toBe(2)
+    expect(job.message).toMatch(/2 nouveaux morceaux/)
+    expect(job.message).toMatch(/2 mis à jour/)
+  })
+})
