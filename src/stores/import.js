@@ -69,13 +69,18 @@ async function fetchJson(url, { method = 'GET' } = {}) {
 
 /**
  * Écrit une volée de morceaux en fusionnant avec l'existant.
- * Renvoie { written, failed } — le nombre de documents réellement écrits, et les
- * échecs signalés par PouchDB. Compter les intentions plutôt que les écritures
- * ferait mentir le rapport d'import, ce que ce store existe précisément pour éviter.
+ * Renvoie { written, created, updated, skipped, failed, received } — les
+ * documents réellement écrits (dont ceux qui n'existaient pas encore et ceux à
+ * qui ce passage n'a fait qu'ajouter une provenance), ceux que la fusion a
+ * laissés intacts, et les échecs signalés par PouchDB. Compter les intentions plutôt que les écritures ferait mentir le
+ * rapport d'import, ce que ce store existe précisément pour éviter. `skipped`
+ * complète l'inverse : sans lui, un réimport sans nouveauté n'a que « 0 morceau
+ * importé » à dire, ce qui se lit comme une panne alors que c'est le
+ * dédoublonnage qui a fait son travail.
  */
 async function writeTracks(rawTracks, source, now = new Date().toISOString()) {
   const received = rawTracks.length
-  if (!received) return { written: 0, failed: [], received: 0 }
+  if (!received) return { written: 0, created: 0, updated: 0, skipped: 0, failed: [], received: 0 }
   const db = getDb()
   const adapt = ADAPTERS[source.platform].track
   const incoming = rawTracks.map((raw) => toTrackDoc(adapt(raw), source, now))
@@ -93,11 +98,26 @@ async function writeTracks(rawTracks, source, now = new Date().toISOString()) {
     if (merged !== byId.get(doc._id)) toWrite.set(doc._id, merged)
   }
 
-  if (toWrite.size === 0) return { written: 0, failed: [], received }
+  // Compté sur les identifiants distincts, pas sur les éléments reçus : une
+  // playlist qui contient deux fois le même morceau n'en a pas deux « déjà à jour ».
+  const skipped = new Set(incoming.map((d) => d._id)).size - toWrite.size
+
+  if (toWrite.size === 0)
+    return { written: 0, created: 0, updated: 0, skipped, failed: [], received }
+
+  // Retenu avant l'écriture, quand `byId` dit encore ce qui existait ; départagé
+  // après, sur les seuls identifiants que PouchDB a acceptés. Compter l'intention
+  // annoncerait des créations qu'un conflit de révision a refusées.
+  const nouveaux = new Set([...toWrite.keys()].filter((id) => !byId.has(id)))
 
   const results = await db.bulkDocs([...toWrite.values()])
+  const ok = results.filter((r) => r.ok)
+  const created = ok.filter((r) => nouveaux.has(r.id)).length
   return {
-    written: results.filter((r) => r.ok).length,
+    written: ok.length,
+    created,
+    updated: ok.length - created,
+    skipped,
     failed: results.filter((r) => r.error).map((r) => ({ id: r.id, reason: r.message || r.name })),
     received,
   }
@@ -152,6 +172,9 @@ export const useImportStore = defineStore('import', {
         startedAt: new Date().toISOString(),
         finishedAt: null,
         imported: 0,
+        created: 0,
+        updated: 0,
+        skipped: 0,
         failed: 0,
         status: 'running',
         message: '',
@@ -230,6 +253,9 @@ export const useImportStore = defineStore('import', {
       const failures = []
       const truncated = []
       let imported = 0
+      let created = 0
+      let updated = 0
+      let skipped = 0
       let writeFailures = 0
 
       let playlists
@@ -247,6 +273,9 @@ export const useImportStore = defineStore('import', {
             playlistName: playlist.name,
           })
           imported += result.written
+          created += result.created
+          updated += result.updated
+          skipped += result.skipped
           writeFailures += result.failed.length
 
           // La playlist annonce son total au moment de la liste (trackCount) ; on le
@@ -274,6 +303,9 @@ export const useImportStore = defineStore('import', {
             liked: true,
           })
           imported += result.written
+          created += result.created
+          updated += result.updated
+          skipped += result.skipped
           writeFailures += result.failed.length
         } catch (err) {
           failures.push(`Titres likés (${err.status})`)
@@ -297,13 +329,28 @@ export const useImportStore = defineStore('import', {
         )
       }
 
-      const importedLabel = pluriel(imported, 'morceau importé', 'morceaux importés')
+      // Trois comptes plutôt qu'un : « importé » recouvrait aussi bien un morceau
+      // découvert qu'un morceau déjà connu à qui l'import n'a ajouté qu'une
+      // provenance. Aucun des trois ne rejoint `notes` : ce ne sont pas des
+      // incidents, et les y mettre ferait passer en « partiel » un import qui
+      // s'est parfaitement déroulé.
+      const compte =
+        [
+          created ? pluriel(created, 'nouveau morceau', 'nouveaux morceaux') : null,
+          updated ? `${updated} mis à jour` : null,
+          skipped ? `${skipped} déjà à jour` : null,
+        ]
+          .filter(Boolean)
+          .join(', ') || 'aucun morceau'
       this.finishJob(job, {
         imported,
+        created,
+        updated,
+        skipped,
         failed: failures.length + writeFailures,
         truncated,
         status: notes.length ? 'partial' : 'ok',
-        message: notes.length ? `${importedLabel}, ${notes.join(', ')}` : importedLabel,
+        message: notes.length ? `${compte}, ${notes.join(', ')}` : compte,
       })
       return job
     },
